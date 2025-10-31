@@ -1,4 +1,7 @@
 
+using Microsoft.EntityFrameworkCore;
+using ServerSide.Models;
+
 namespace ServerSide
 {
     public class Program
@@ -13,8 +16,12 @@ namespace ServerSide
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddCors();
+            builder.Services.AddDbContext<Prn232ClockShopContext>(options =>
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("MyCnn")));
 
-            var app = builder.Build();
+			var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -27,8 +34,12 @@ namespace ServerSide
 
             app.UseAuthorization();
 
+            app.UseCors(policy =>
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader());
 
-            app.MapControllers();
+			app.MapControllers();
 
             app.Run();
         }
