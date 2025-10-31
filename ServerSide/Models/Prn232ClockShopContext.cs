@@ -27,6 +27,8 @@ public partial class Prn232ClockShopContext : DbContext
 
     public virtual DbSet<Payment> Payments { get; set; }
 
+    public virtual DbSet<Permission> Permissions { get; set; }
+
     public virtual DbSet<Product> Products { get; set; }
 
     public virtual DbSet<Review> Reviews { get; set; }
@@ -34,6 +36,8 @@ public partial class Prn232ClockShopContext : DbContext
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<WebPage> WebPages { get; set; }
 
     public virtual DbSet<Wishlist> Wishlists { get; set; }
 
@@ -48,9 +52,9 @@ public partial class Prn232ClockShopContext : DbContext
     {
         modelBuilder.Entity<Brand>(entity =>
         {
-            entity.HasKey(e => e.BrandId).HasName("PK__Brands__DAD4F3BE6F97BDA0");
+            entity.HasKey(e => e.BrandId).HasName("PK__Brands__DAD4F3BEDEB02AB8");
 
-            entity.HasIndex(e => e.BrandName, "UQ__Brands__2206CE9BDB072FEA").IsUnique();
+            entity.HasIndex(e => e.BrandName, "UQ__Brands__2206CE9B6EB582E5").IsUnique();
 
             entity.Property(e => e.BrandId).HasColumnName("BrandID");
             entity.Property(e => e.BrandName).HasMaxLength(100);
@@ -65,11 +69,11 @@ public partial class Prn232ClockShopContext : DbContext
 
         modelBuilder.Entity<Cart>(entity =>
         {
-            entity.HasKey(e => e.CartId).HasName("PK__Cart__51BCD7973A594C49");
+            entity.HasKey(e => e.CartId).HasName("PK__Cart__51BCD79789DBE39C");
 
             entity.ToTable("Cart");
 
-            entity.HasIndex(e => new { e.CustomerId, e.ProductId }, "UQ__Cart__6FEEA8D7E9E5C2CB").IsUnique();
+            entity.HasIndex(e => new { e.CustomerId, e.ProductId }, "UQ__Cart__6FEEA8D7CC99E0E3").IsUnique();
 
             entity.Property(e => e.CartId).HasColumnName("CartID");
             entity.Property(e => e.AddedAt)
@@ -81,18 +85,18 @@ public partial class Prn232ClockShopContext : DbContext
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Carts)
                 .HasForeignKey(d => d.CustomerId)
-                .HasConstraintName("FK__Cart__CustomerID__6FE99F9F");
+                .HasConstraintName("FK__Cart__CustomerID__7C4F7684");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Carts)
                 .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK__Cart__ProductID__70DDC3D8");
+                .HasConstraintName("FK__Cart__ProductID__7D439ABD");
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A2B58F9786A");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A2B90E6F557");
 
-            entity.HasIndex(e => e.CategoryName, "UQ__Categori__8517B2E05F31324D").IsUnique();
+            entity.HasIndex(e => e.CategoryName, "UQ__Categori__8517B2E04934D43F").IsUnique();
 
             entity.Property(e => e.CategoryId).HasColumnName("CategoryID");
             entity.Property(e => e.CategoryName).HasMaxLength(100);
@@ -105,14 +109,14 @@ public partial class Prn232ClockShopContext : DbContext
 
             entity.HasOne(d => d.ParentCategory).WithMany(p => p.InverseParentCategory)
                 .HasForeignKey(d => d.ParentCategoryId)
-                .HasConstraintName("FK__Categorie__Paren__4AB81AF0");
+                .HasConstraintName("FK__Categorie__Paren__571DF1D5");
         });
 
         modelBuilder.Entity<Order>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__Orders__C3905BAF4AECB669");
+            entity.HasKey(e => e.OrderId).HasName("PK__Orders__C3905BAFE70EF49E");
 
-            entity.HasIndex(e => e.OrderCode, "UQ__Orders__999B522996613B60").IsUnique();
+            entity.HasIndex(e => e.OrderCode, "UQ__Orders__999B52299B676E1D").IsUnique();
 
             entity.Property(e => e.OrderId).HasColumnName("OrderID");
             entity.Property(e => e.CreatedAt)
@@ -135,16 +139,16 @@ public partial class Prn232ClockShopContext : DbContext
             entity.HasOne(d => d.Customer).WithMany(p => p.OrderCustomers)
                 .HasForeignKey(d => d.CustomerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Orders__Customer__5CD6CB2B");
+                .HasConstraintName("FK__Orders__Customer__693CA210");
 
             entity.HasOne(d => d.ProcessedByNavigation).WithMany(p => p.OrderProcessedByNavigations)
                 .HasForeignKey(d => d.ProcessedBy)
-                .HasConstraintName("FK__Orders__Processe__5DCAEF64");
+                .HasConstraintName("FK__Orders__Processe__6A30C649");
         });
 
         modelBuilder.Entity<OrderDetail>(entity =>
         {
-            entity.HasKey(e => e.OrderDetailId).HasName("PK__OrderDet__D3B9D30C0E0217C2");
+            entity.HasKey(e => e.OrderDetailId).HasName("PK__OrderDet__D3B9D30CA0EACD4B");
 
             entity.Property(e => e.OrderDetailId).HasColumnName("OrderDetailID");
             entity.Property(e => e.OrderId).HasColumnName("OrderID");
@@ -155,17 +159,17 @@ public partial class Prn232ClockShopContext : DbContext
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("FK__OrderDeta__Order__60A75C0F");
+                .HasConstraintName("FK__OrderDeta__Order__6D0D32F4");
 
             entity.HasOne(d => d.Product).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__OrderDeta__Produ__619B8048");
+                .HasConstraintName("FK__OrderDeta__Produ__6E01572D");
         });
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A5826F059D7");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A583EC0E4F9");
 
             entity.Property(e => e.PaymentId).HasColumnName("PaymentID");
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
@@ -185,14 +189,45 @@ public partial class Prn232ClockShopContext : DbContext
             entity.HasOne(d => d.Order).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Payments__OrderI__7D439ABD");
+                .HasConstraintName("FK__Payments__OrderI__09A971A2");
+        });
+
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(e => e.PermissionId).HasName("PK__Permissi__EFA6FB0FB21C12C0");
+
+            entity.HasIndex(e => new { e.RoleId, e.PageId }, "UQ__Permissi__D6AC95296A461897").IsUnique();
+
+            entity.Property(e => e.PermissionId).HasColumnName("PermissionID");
+            entity.Property(e => e.CanAdd).HasDefaultValue(false);
+            entity.Property(e => e.CanDelete).HasDefaultValue(false);
+            entity.Property(e => e.CanEdit).HasDefaultValue(false);
+            entity.Property(e => e.CanView).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.PageId).HasColumnName("PageID");
+            entity.Property(e => e.RoleId).HasColumnName("RoleID");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.Page).WithMany(p => p.Permissions)
+                .HasForeignKey(d => d.PageId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Permissio__PageI__4CA06362");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.Permissions)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Permissio__RoleI__4BAC3F29");
         });
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6ED17B927AE");
+            entity.HasKey(e => e.ProductId).HasName("PK__Products__B40CC6ED69768926");
 
-            entity.HasIndex(e => e.ProductCode, "UQ__Products__2F4E024F907C0F60").IsUnique();
+            entity.HasIndex(e => e.ProductCode, "UQ__Products__2F4E024F5E751F53").IsUnique();
 
             entity.Property(e => e.ProductId).HasColumnName("ProductID");
             entity.Property(e => e.BrandId).HasColumnName("BrandID");
@@ -211,17 +246,17 @@ public partial class Prn232ClockShopContext : DbContext
             entity.HasOne(d => d.Brand).WithMany(p => p.Products)
                 .HasForeignKey(d => d.BrandId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Products__BrandI__52593CB8");
+                .HasConstraintName("FK__Products__BrandI__5EBF139D");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Products__Catego__534D60F1");
+                .HasConstraintName("FK__Products__Catego__5FB337D6");
         });
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79AE332C82D3");
+            entity.HasKey(e => e.ReviewId).HasName("PK__Reviews__74BC79AE407322B7");
 
             entity.Property(e => e.ReviewId).HasColumnName("ReviewID");
             entity.Property(e => e.Comment).HasMaxLength(1000);
@@ -237,27 +272,27 @@ public partial class Prn232ClockShopContext : DbContext
 
             entity.HasOne(d => d.ApprovedByNavigation).WithMany(p => p.ReviewApprovedByNavigations)
                 .HasForeignKey(d => d.ApprovedBy)
-                .HasConstraintName("FK__Reviews__Approve__6A30C649");
+                .HasConstraintName("FK__Reviews__Approve__76969D2E");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.ReviewCustomers)
                 .HasForeignKey(d => d.CustomerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Reviews__Custome__68487DD7");
+                .HasConstraintName("FK__Reviews__Custome__74AE54BC");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("FK__Reviews__OrderID__693CA210");
+                .HasConstraintName("FK__Reviews__OrderID__75A278F5");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK__Reviews__Product__6754599E");
+                .HasConstraintName("FK__Reviews__Product__73BA3083");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A1FFA1EF7");
+            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A2457D5FD");
 
-            entity.HasIndex(e => e.RoleName, "UQ__Roles__8A2B6160EF3A7CA2").IsUnique();
+            entity.HasIndex(e => e.RoleName, "UQ__Roles__8A2B6160BBC1FD7A").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.CreatedAt)
@@ -269,11 +304,11 @@ public partial class Prn232ClockShopContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCAC71B1117C");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCACEF381290");
 
-            entity.HasIndex(e => e.Username, "UQ__Users__536C85E4895639C4").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__Users__536C85E4FBF3673E").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534A1B9F113").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D1053468B68016").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Address).HasMaxLength(255);
@@ -296,13 +331,24 @@ public partial class Prn232ClockShopContext : DbContext
                 .HasConstraintName("FK__Users__RoleID__403A8C7D");
         });
 
+        modelBuilder.Entity<WebPage>(entity =>
+        {
+            entity.HasKey(e => e.PageId).HasName("PK__WebPages__C565B124AB6A528F");
+
+            entity.Property(e => e.PageId).HasColumnName("PageID");
+            entity.Property(e => e.PageName).HasMaxLength(50);
+            entity.Property(e => e.Url)
+                .HasMaxLength(250)
+                .HasColumnName("URL");
+        });
+
         modelBuilder.Entity<Wishlist>(entity =>
         {
-            entity.HasKey(e => e.WishlistId).HasName("PK__Wishlist__233189CB7DB86278");
+            entity.HasKey(e => e.WishlistId).HasName("PK__Wishlist__233189CBA29279BE");
 
             entity.ToTable("Wishlist");
 
-            entity.HasIndex(e => new { e.CustomerId, e.ProductId }, "UQ__Wishlist__6FEEA8D7F4E36D30").IsUnique();
+            entity.HasIndex(e => new { e.CustomerId, e.ProductId }, "UQ__Wishlist__6FEEA8D7744C89BB").IsUnique();
 
             entity.Property(e => e.WishlistId).HasColumnName("WishlistID");
             entity.Property(e => e.AddedAt)
@@ -313,11 +359,11 @@ public partial class Prn232ClockShopContext : DbContext
 
             entity.HasOne(d => d.Customer).WithMany(p => p.Wishlists)
                 .HasForeignKey(d => d.CustomerId)
-                .HasConstraintName("FK__Wishlist__Custom__75A278F5");
+                .HasConstraintName("FK__Wishlist__Custom__02084FDA");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Wishlists)
                 .HasForeignKey(d => d.ProductId)
-                .HasConstraintName("FK__Wishlist__Produc__76969D2E");
+                .HasConstraintName("FK__Wishlist__Produc__02FC7413");
         });
 
         OnModelCreatingPartial(modelBuilder);
