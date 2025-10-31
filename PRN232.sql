@@ -1,4 +1,4 @@
-﻿create database PRN232_ClockShop
+﻿--create database PRN232_ClockShop
 
 -- Bảng Vai trò (Roles)
 CREATE TABLE Roles (
@@ -22,6 +22,28 @@ CREATE TABLE Users (
     CreatedAt DATETIME DEFAULT GETDATE(),
     UpdatedAt DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
+);
+
+CREATE TABLE WebPages (
+    PageID INT PRIMARY KEY IDENTITY(1,1),
+    PageName nvarchar(50) not null,
+	URL nvarchar(250) not null
+);
+
+CREATE TABLE Permissions (
+    PermissionID INT PRIMARY KEY IDENTITY(1,1),
+    RoleID INT NOT NULL,
+	PageID INT NOT NULL,
+    CanAdd bit default 0,
+	CanEdit bit default 0,
+    CanDelete bit default 0,
+	CanView bit default 0,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    
+    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID),
+	FOREIGN KEY (PageID) REFERENCES WebPages(PageID),
+	UNIQUE(RoleID, PageID),
 );
 
 -- Bảng Thương hiệu đồng hồ
@@ -97,17 +119,6 @@ CREATE TABLE OrderDetails (
     FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
 );
 
--- Bảng Lịch sử trạng thái đơn hàng
-CREATE TABLE OrderStatusHistory (
-    HistoryID INT PRIMARY KEY IDENTITY(1,1),
-    OrderID INT NOT NULL,
-    Status NVARCHAR(50),
-    Note NVARCHAR(500),
-    ChangedBy INT NOT NULL,
-    ChangedAt DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE,
-    FOREIGN KEY (ChangedBy) REFERENCES Users(UserID)
-);
 
 -- Bảng Đánh giá sản phẩm
 CREATE TABLE Reviews (
