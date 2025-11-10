@@ -182,16 +182,16 @@ CREATE TABLE Payments (
 -- 1. Roles
 INSERT INTO Roles (RoleName, Description) VALUES
 (N'Admin', N'Quản trị hệ thống'),
-(N'Staff', N'Nhân viên bán hàng và xử lý đơn'),
+(N'Supplier', N'Nhân viên bán hàng và xử lý đơn'),
 (N'Customer', N'Khách hàng');
 
 -- 2. Users
 INSERT INTO Users (Username, PasswordHash, Email, FullName, PhoneNumber, Address, RoleID)
 VALUES
 (N'admin', N'adminhash', N'admin@clockshop.vn', N'Nguyễn Văn A', N'0987654321', N'Hà Nội', 1),
-(N'staff1', N'staff1hash', N'staff1@clockshop.vn', N'Trần Thị B', N'0912345678', N'Hồ Chí Minh', 2),
-(N'customer1', N'customer1hash', N'customer1@gmail.com', N'Lê Văn C', N'0901234567', N'Hà Nội', 3),
-(N'customer2', N'customer2hash', N'customer2@gmail.com', N'Phạm Thị D', N'0938765432', N'Đà Nẵng', 3);
+(N'Supplier1', N'staff1hash', N'staff1@clockshop.vn', N'Trần Thị B', N'0912345678', N'Hồ Chí Minh', 2),
+(N'Supplier2', N'customer1hash', N'customer1@gmail.com', N'Lê Văn C', N'0901234567', N'Hà Nội', 3),
+(N'Supplier3', N'customer2hash', N'customer2@gmail.com', N'Phạm Thị D', N'0938765432', N'Đà Nẵng', 3);
 
 -- 3. Brands
 INSERT INTO Brands (BrandName, Country, Description)
