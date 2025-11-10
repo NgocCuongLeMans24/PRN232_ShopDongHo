@@ -1,6 +1,10 @@
-
+﻿
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ServerSide.Models;
+using System.Text;
 
 namespace ServerSide
 {
@@ -12,16 +16,51 @@ namespace ServerSide
 
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                    options.JsonSerializerOptions.WriteIndented = true;
+                });
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddCors();
             builder.Services.AddDbContext<Prn232ClockShopContext>(options =>
-                options.UseSqlServer(
-                    builder.Configuration.GetConnectionString("MyCnn")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn")));
 
-			var app = builder.Build();
+            // Thêm dịch vụ CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowClient",
+                    policy => policy
+                        .WithOrigins("https://localhost:5100") // client
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()); // nếu muốn gửi cookie / auth
+            });
+
+            builder.Services.AddControllers();
+            var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).
+                AddJwtBearer(opt =>
+                {
+                    opt.SaveToken = true;
+                    opt.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        IssuerSigningKey = new SymmetricSecurityKey(key)
+                    };
+                });
+
+
+            var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -32,14 +71,12 @@ namespace ServerSide
 
             app.UseHttpsRedirection();
 
+            app.UseCors("AllowClient");
+
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseCors(policy =>
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader());
-
-			app.MapControllers();
+            app.MapControllers();
 
             app.Run();
         }
