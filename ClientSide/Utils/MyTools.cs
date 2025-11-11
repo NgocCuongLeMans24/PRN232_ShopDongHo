@@ -1,8 +1,8 @@
 ﻿namespace ClientSide.Utils
 {
-	static public class MyTool
+	static public class MyTools
 	{
-		public static string GetUrl()
+		public static string getUrl()
 		{
 			return new ConfigurationBuilder().AddJsonFile("appsettings.json")
 				.Build()
