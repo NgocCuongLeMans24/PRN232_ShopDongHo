@@ -1,0 +1,89 @@
+﻿@* Trỏ model về ViewModel mới *@
+@model ClientSide.ViewModels.AdminDashboardViewModel
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<h1>Admin Dashboard</h1>
+<p>Tổng quan hệ thống.</p>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<hr />
+
+<h2>Quản lý Người dùng (@Model.Users.Count)</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Họ tên</th>
+            <th>Vai trò</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.UserId</td>
+                <td>@user.Username</td>
+                <td>@user.FullName</td>
+                <td>@user.RoleName</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<h2>Quản lý Sản phẩm (@Model.Products.Count)</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên sản phẩm</th>
+            <th>Giá</th>
+            <th>Tồn kho</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var product in Model.Products)
+        {
+            <tr>
+                <td>@product.ProductId</td>
+                <td>@product.Name</td>
+                <td>@product.Price.ToString("N0") VND</td>
+                <td>@product.Stock</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<h2>Quản lý Đơn hàng (@Model.Orders.Count)</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User ID (Khách)</th>
+            <th>Ngày đặt</th>
+            <th>Tổng tiền</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var order in Model.Orders)
+        {
+            <tr>
+                <td>@order.OrderId</td>
+                <td>@order.UserId</td>
+                <td>@order.OrderDate.ToString("dd/MM/yyyy")</td>
+                <td>@order.TotalAmount.ToString("N0") VND</td>
+            </tr>
+        }
+    </tbody>
+</table>
