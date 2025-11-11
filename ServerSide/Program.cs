@@ -21,6 +21,39 @@ namespace ServerSide
                 options.UseSqlServer(
                     builder.Configuration.GetConnectionString("MyCnn")));
 
+<<<<<<< Updated upstream
+=======
+            // Thêm dịch vụ CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowClient",
+                    policy => policy
+                        .WithOrigins("https://localhost:5100") // client
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()); // nếu muốn gửi cookie / auth
+            });
+
+            builder.Services.AddControllers();
+            var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).
+                AddJwtBearer(opt =>
+                {
+                    opt.SaveToken = true;
+                    opt.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        IssuerSigningKey = new SymmetricSecurityKey(key)
+                    };
+                });
+			builder.Services.AddAuthorization();
+
+>>>>>>> Stashed changes
 			var app = builder.Build();
 
             // Configure the HTTP request pipeline.
