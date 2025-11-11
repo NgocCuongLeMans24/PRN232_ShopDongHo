@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ServerSide.DataDtos;
 using ServerSide.Models;
 
 namespace ServerSide.Controllers
@@ -24,14 +25,22 @@ namespace ServerSide.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
         {
-            return await _context.Products.ToListAsync();
+            var products = await _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .ToListAsync();
+
+            return Ok(products);
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _context.Products
+                .Include(p => p.Brand)
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
 
             if (product == null)
             {
@@ -75,12 +84,42 @@ namespace ServerSide.Controllers
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<ActionResult<Product>> PostProduct(ProductCreateDto productDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var exists = await _context.Products
+                .AnyAsync(p => p.ProductCode == productDto.ProductCode);
+            if (exists)
+            {
+                return Conflict(new { message = "Mã sản phẩm đã tồn tại!" });
+            }
+
+            var product = new Product
+            {
+                ProductCode = productDto.ProductCode,
+                ProductName = productDto.ProductName,
+                BrandId = productDto.BrandId,
+                CategoryId = productDto.CategoryId,
+                Description = productDto.Description,
+                Image = productDto.Image,
+                Price = productDto.Price,
+                StockQuantity = productDto.StockQuantity,
+                IsActive = productDto.IsActive,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
+            await _context.Entry(product).Reference(p => p.Brand).LoadAsync();
+            await _context.Entry(product).Reference(p => p.Category).LoadAsync();
+
+            return CreatedAtAction(nameof(GetProduct), new { id = product.ProductId }, product);
         }
 
         // DELETE: api/Products/5

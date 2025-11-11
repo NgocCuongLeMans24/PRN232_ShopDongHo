@@ -44,18 +44,46 @@ namespace ServerSide.Controllers
 
         // GET: api/Orders/5
         [HttpGet("GetOrdersByCustomerId/{customerId}")]
-        public async Task<ActionResult<Order>> GetOrdersByCustomerId(int customerId)
+        public async Task<ActionResult<IEnumerable<Order>>> GetOrdersByCustomerId(int customerId)
         {
-            var order = await _context.Orders
-                .Include(od => od.OrderDetails)
-                .Where(o => o.CustomerId == customerId).ToListAsync();
+            var orders = await _context.Orders
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
+                .Where(o => o.CustomerId == customerId)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
 
-            if (order == null)
+            if (!orders.Any())
             {
-                return NotFound();
+                return NotFound(new { message = "Khách hàng chưa có đơn hàng nào." });
             }
 
-            return Ok(order);
+            return Ok(orders);
+        }
+
+        [HttpGet("GetPurchaseHistory/{customerId}")]
+        public async Task<ActionResult<IEnumerable<PurchaseHistoryItemDto>>> GetPurchaseHistory(int customerId)
+        {
+            var history = await _context.Orders
+                .Where(o => o.CustomerId == customerId)
+                .Include(o => o.OrderDetails)
+                .SelectMany(o => o.OrderDetails.Select(d => new PurchaseHistoryItemDto
+                {
+                    OrderId = o.OrderId,
+                    OrderCode = o.OrderCode,
+                    OrderDate = o.CreatedAt,
+                    OrderStatus = o.OrderStatus,
+                    PaymentStatus = o.PaymentStatus,
+                    ProductId = d.ProductId,
+                    ProductName = d.ProductName,
+                    Quantity = d.Quantity,
+                    Price = d.Price,
+                    TotalPrice = d.TotalPrice
+                }))
+                .OrderByDescending(x => x.OrderDate)
+                .ToListAsync();
+
+            return Ok(history);
         }
 
         // PUT: api/Orders/5
