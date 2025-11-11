@@ -1,20 +1,26 @@
-﻿@model IEnumerable<ClientSide.Models.Order>
+﻿@model IList<ClientSide.Models.Order>
 
 @{
     ViewData["Title"] = "Đơn hàng của tôi";
-    var orders = ViewBag.orders as List<ClientSide.Models.Order>;
 }
 
-<h2 class="mb-3">Đơn hàng của tôi</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Đơn hàng của tôi</h2>
+    <a asp-action="History" class="btn btn-info">📋 Lịch sử mua hàng</a>
+</div>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-@if (orders == null || !orders.Any())
+@if (Model == null || !Model.Any())
 {
-    <p>Hiện tại bạn chưa có đơn hàng nào.</p>
+    <div class="alert alert-info">Hiện tại bạn chưa có đơn hàng nào.</div>
 }
 else
 {
@@ -31,16 +37,17 @@ else
             </tr>
         </thead>
         <tbody>
-            @for (int i = 0; i < orders.Count; i++)
+            @for (int i = 0; i < Model.Count; i++)
             {
-                var order = orders[i];
+                var order = Model[i];
+                var orderTotal = order.OrderDetails?.Sum(d => d.TotalPrice) ?? 0m;
                 <tr>
                     <td>@(i + 1)</td>
                     <td>@order.OrderCode</td>
                     <td>@order.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@order.OrderStatus</td>
                     <td>@order.PaymentStatus</td>
-                    <td>@order.OrderDetails?.Sum(d => d.TotalPrice).ToString("C")</td>
+                    <td>@string.Format("{0:N0} VNĐ", orderTotal)</td>
                     <td>
                         <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#details-@order.OrderId">
                             Xem
@@ -59,13 +66,16 @@ else
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var detail in order.OrderDetails)
+                                @{
+                                    var details = order.OrderDetails ?? new List<ClientSide.Models.OrderDetail>();
+                                }
+                                @foreach (var detail in details)
                                 {
                                     <tr>
                                         <td>@detail.ProductName</td>
-                                        <td>@detail.Price.ToString("C")</td>
+                                        <td>@string.Format("{0:N0} VNĐ", detail.Price)</td>
                                         <td>@detail.Quantity</td>
-                                        <td>@detail.TotalPrice.ToString("C")</td>
+                                        <td>@string.Format("{0:N0} VNĐ", detail.TotalPrice)</td>
                                     </tr>
                                 }
                             </tbody>

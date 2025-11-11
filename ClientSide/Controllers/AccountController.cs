@@ -49,6 +49,13 @@ namespace ClientSide.Controllers
             return RedirectToAction("Index", "Products");
         }
 
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Index", "Products");
+        }
+
         public class LoginResponse
         {
             public string Token { get; set; }
