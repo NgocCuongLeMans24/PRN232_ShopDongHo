@@ -62,22 +62,7 @@
                 <span asp-validation-for="Address" class="text-danger"></span>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="RoleId" class="form-label"></label>
-                <select asp-for="RoleId" class="form-select">
-                    <option value="">-- Chọn vai trò --</option>
-                    @if (roles != null)
-                    {
-                            @foreach (var role in roles)
-                            {
-                                    <option value="@role.RoleId" selected="@(role.RoleId == Model.RoleId)">
-                                        @role.RoleName
-                                    </option>
-                            }
-                    }
-                </select>
-                <span asp-validation-for="RoleId" class="text-danger"></span>
-            </div>
+            <input type="hidden" asp-for="RoleId" />
 
             <div class="form-check mb-3">
                 <input asp-for="IsActive" class="form-check-input" type="checkbox" />
@@ -85,7 +70,14 @@
             </div>
 
             <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-            <a asp-action="Index" asp-controller="Users" class="btn btn-secondary">Hủy</a>
+            @if (Model.RoleId == 2)
+            {
+                <a asp-action="Supplier" asp-controller="Users" class="btn btn-secondary">Hủy</a>
+            }
+            else
+            {
+                <a asp-action="Customer" asp-controller="Users" class="btn btn-secondary">Hủy</a>
+            }
         </form>
     </div>
 </div>

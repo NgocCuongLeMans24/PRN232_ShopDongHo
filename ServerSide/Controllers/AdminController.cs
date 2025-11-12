@@ -28,12 +28,11 @@ namespace ServerSide.Controllers
 			[FromQuery] string sortBy = "FullName",
 			[FromQuery] string sortOrder = "asc")
 		{
-			// 1. Bắt đầu với IQueryable
+
 			var query = _context.Users
 								.Include(u => u.Role)
 								.AsQueryable();
 
-			// 2. Lọc (Filter)
 			if (!string.IsNullOrEmpty(searchTerm))
 			{
 				query = query.Where(u => u.FullName.Contains(searchTerm) ||
@@ -42,10 +41,9 @@ namespace ServerSide.Controllers
 
 			if (roleFilter != "All")
 			{
-				query = query.Where(u => u.Role.RoleName == roleFilter);
+				query = query.Where(u => u.Role != null && u.Role.RoleName == roleFilter);
 			}
 
-			// 3. Sắp xếp (Sort)
 			if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
 			{
 				query = sortBy switch

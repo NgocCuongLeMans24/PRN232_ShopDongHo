@@ -1,13 +1,13 @@
-﻿@* 1. Model bây giờ là UserListViewModel *@
+﻿@* 1. Model vẫn là UserListViewModel *@
 @model ClientSide.ViewModels.UserListViewModel
 
 @{
-    ViewData["Title"] = "Quản lý Người dùng";
+    ViewData["Title"] = "Quản lý Khách hàng";
 }
 
 <div class="container-fluid pt-4 px-4">
     <div class="bg-light rounded h-100 p-4">
-        <h1 class="mb-4">Danh sách Người dùng</h1>
+        <h1 class="mb-4">Danh sách Khách hàng</h1>
 
         @if (ViewBag.Error != null)
         {
@@ -15,27 +15,20 @@
         }
 
         <p>
-            <a asp-action="Create" asp-controller="Users" class="btn btn-primary">Thêm Người dùng mới</a>
+            <a asp-action="Create" asp-controller="Users" asp-route-roleId="3" class="btn btn-primary">Thêm Khách hàng mới</a>
             <a asp-action="Index" asp-controller="Admin" class="btn btn-secondary">Quay lại Dashboard</a>
         </p>
 
         <form asp-action="Index" method="get" class="mb-3">
             <div class="row g-3">
-                <div class="col-md-5">
+                <div class="col-md-9">
                     <input type="text" name="searchTerm" class="form-control" placeholder="Tìm theo tên hoặc username..." value="@Model.SearchTerm" />
-                </div>
-                <div class="col-md-4">
-                    <select name="roleFilter" class="form-select" asp-for="RoleFilter">
-                        <option value="All">Tất cả vai trò</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Supplier">Supplier</option>
-                        <option value="Customer">Customer</option>
-                    </select>
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-info w-100">Tìm kiếm</button>
                 </div>
             </div>
+            <input type="hidden" name="roleFilter" value="Customer" />
         </form>
 
         <div class="table-responsive">
@@ -43,9 +36,11 @@
                 <thead>
                     <tr>
                         <th scope="col">ID</th>
-                        <th scope="col">Tên đăng nhập</th>
                         <th scope="col">Họ và tên</th>
-                        <th scope="col">Vai trò</th>
+                        <th scope="col">Tên đăng nhập</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Số điện thoại</th>
+                        <th scope="col">Trạng thái</th>
                         <th scope="col">Hành động</th>
                     </tr>
                 </thead>
@@ -54,9 +49,20 @@
                     {
                         <tr>
                             <td>@user.UserId</td>
-                            <td>@user.Username</td>
                             <td>@user.FullName</td>
-                            <td>@user.RoleName</td>
+                            <td>@user.Username</td>
+                            <td>@user.Email</td>
+                            <td>@user.PhoneNumber</td>
+                            <td>
+                                @if (user.IsActive == true)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
                             <td>
                                 <a asp-action="Edit" asp-controller="Users" asp-route-id="@user.UserId" class="btn btn-sm btn-warning">Sửa</a>
                             </td>
