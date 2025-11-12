@@ -19,7 +19,6 @@
         --dash-btn-secondary-text: #555;
     }
 
-    /* Ghi đè lên layout chính nếu cần */
     body {
         background-color: #f4f7fa; /* Màu nền xám nhạt */
     }
@@ -30,7 +29,6 @@
         padding: 20px;
     }
 
-    /* Header */
     .dash-header {
         background: var(--dash-bg);
         color: white;
@@ -52,7 +50,6 @@
             opacity: 0.8;
         }
 
-    /* Lưới layout chung */
     .dash-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -65,7 +62,6 @@
         gap: 20px;
     }
 
-    /* Thẻ (Card) */
     .dash-card {
         background: var(--dash-card-bg);
         border-radius: var(--dash-radius);
@@ -74,7 +70,6 @@
         overflow: hidden;
     }
 
-    /* Thẻ thống kê (4 thẻ trên) */
     .stat-card {
         position: relative;
     }
@@ -107,7 +102,6 @@
             opacity: 0.3;
         }
 
-    /* Thẻ quản lý (Thẻ chứa các nút) */
     .management-card h3 {
         margin-top: 0;
         margin-bottom: 16px;
@@ -149,7 +143,6 @@
             background: #e0e0e0;
         }
 
-    /* Thẻ danh sách (2 thẻ dưới) */
     .list-card h3 {
         margin-top: 0;
         margin-bottom: 20px;
@@ -184,6 +177,14 @@
         .list-avatar.avatar-product {
             background: #00c19a; /* Màu xanh cho sản phẩm */
         }
+        /* --- THÊM CSS NÀY --- */
+        .list-avatar.avatar-supplier {
+            background: #e66b4c; /* Màu cam cho supplier */
+        }
+
+        .list-avatar.avatar-order {
+            background: #4ac3e6; /* Màu xanh cho order */
+        }
 
     .list-info .name {
         font-weight: 600;
@@ -194,7 +195,6 @@
         font-size: 0.85rem;
         color: var(--dash-text-light);
     }
-
 </style>
 
 <div class="admin-dashboard-container">
@@ -240,18 +240,28 @@
     </div>
 
     <div class="dash-grid" style="margin-bottom: 20px;">
+
         <div class="dash-card management-card">
             <h3>Customer Management</h3>
             <div class="actions">
-                <a asp-action="Index" asp-controller="Users" class="dash-btn btn-secondary">View All Customers</a>
+                <a asp-action="Customer" asp-controller="Users" class="dash-btn btn-secondary">View All Customers</a>
             </div>
         </div>
+
+        <div class="dash-card management-card">
+            <h3>Supplier Management</h3>
+            <div class="actions">
+                <a asp-action="Supplier" asp-controller="Users" class="dash-btn btn-secondary">View All Suppliers</a>
+            </div>
+        </div>
+
         <div class="dash-card management-card">
             <h3>Product Management</h3>
             <div class="actions">
                 <a asp-action="Index" asp-controller="Products" class="dash-btn btn-secondary">View All Products</a>
             </div>
         </div>
+
         <div class="dash-card management-card">
             <h3>Order Management</h3>
             <div class="actions">
@@ -261,17 +271,52 @@
     </div>
 
     <div class="dash-grid-col-2">
+
         <div class="dash-card list-card">
             <h3>Recent Customers</h3>
             @foreach (var customer in Model.RecentCustomers)
             {
                 <div class="list-item">
                     <div class="list-avatar">
-                        @customer.FullName.Substring(0, 1)
+                        @(!string.IsNullOrEmpty(customer.FullName) ? customer.FullName.Substring(0, 1) : "C")
                     </div>
                     <div class="list-info">
-                        <div class="name">@customer.FullName</div>
-                        <div class="detail">@customer.Username</div>
+                        <div class="name">@(customer.FullName ?? "N/A")</div>
+                        <div class="detail">@(customer.Username ?? "N/A")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="dash-card list-card">
+            <h3>Recent Suppliers</h3>
+            @foreach (var supplier in Model.RecentSuppliers)
+            {
+                <div class="list-item">
+                    <div class="list-avatar avatar-supplier">
+                        @(!string.IsNullOrEmpty(supplier.FullName) ? supplier.FullName.Substring(0, 1) : "S")
+                    </div>
+                    <div class="list-info">
+                        <div class="name">@(supplier.FullName ?? "N/A")</div>
+                        <div class="detail">@(supplier.Username ?? "N/A")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="dash-card list-card">
+            <h3>Recent Orders</h3>
+            @foreach (var order in Model.RecentOrders)
+            {
+                <div class="list-item">
+                    <div class="list-avatar avatar-order">
+                        @* Giả sử OrderDto có OrderId *@
+                        <span style="font-size: 0.8em;">#@order.OrderId</span>
+                    </div>
+                    <div class="list-info">
+                        @* Giả sử OrderDto có TotalAmount *@
+                        <div class="name">@order.TotalAmount.ToString("N0") VND</div>
+                        <div class="detail">Ngày đặt: @order.OrderDate.ToString("dd/MM/yyyy")</div>
                     </div>
                 </div>
             }
@@ -283,17 +328,17 @@
             {
                 <div class="list-item">
                     <div class="list-avatar avatar-product">
-                        
+                        @* (Đã sửa lỗi null ProductName từ trước) *@
                         @(!string.IsNullOrEmpty(product.ProductName) ? product.ProductName.Substring(0, 1) : "P")
                     </div>
                     <div class="list-info">
-                        
                         <div class="name">@(product.ProductName ?? "Sản phẩm không tên")</div>
                         <div class="detail">@product.Price.ToString("N0") VND</div>
                     </div>
                 </div>
             }
         </div>
+
     </div>
 
 </div>

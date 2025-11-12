@@ -47,21 +47,28 @@ namespace ClientSide.Controllers
 
 			try
 			{
-				var allCustomers = await GetApiData<List<UserDto>>(client, $"{_urlBase}/api/Users");
+				var allUsers = await GetApiData<List<UserDto>>(client, $"{_urlBase}/api/Users");
 				var allProducts = await GetApiData<List<ProductDto>>(client, $"{_urlBase}/api/Products");
 				var allOrders = await GetApiData<List<OrderDto>>(client, $"{_urlBase}/api/Orders");
 
-				viewModel.Users = allCustomers;
+				var customers = allUsers
+								.Where(u => u.RoleId == 3)
+								.ToList();
+
+				var suppliers = allUsers
+								.Where(u => u.RoleId == 2)
+								.ToList();
+
 				viewModel.Products = allProducts;
 				viewModel.Orders = allOrders;
 
-				viewModel.TotalCustomerCount = allCustomers.Count;
+				viewModel.TotalCustomerCount = customers.Count;
 				viewModel.TotalProductCount = allProducts.Count;
 				viewModel.TotalOrderCount = allOrders.Count;
-				viewModel.TotalSupplierCount = 0;
+				viewModel.TotalSupplierCount = suppliers.Count;
 
 				// Điền các danh sách rút gọn (cho 2 thẻ dưới)
-				viewModel.RecentCustomers = allCustomers
+				viewModel.RecentCustomers = customers
 												.OrderByDescending(c => c.UserId) // Giả sử có UserId
 												.Take(5) // Lấy 5 người mới nhất
 												.ToList();
@@ -69,6 +76,15 @@ namespace ClientSide.Controllers
 				viewModel.RecentProducts = allProducts
 												.OrderByDescending(p => p.ProductId) // Giả sử có ProductId
 												.Take(5) // Lấy 5 sản phẩm mới nhất
+												.ToList();
+				viewModel.RecentOrders = allOrders
+												.OrderByDescending(o => o.OrderDate)
+												.Take(5)
+												.ToList();
+
+				viewModel.RecentSuppliers = suppliers
+												.OrderByDescending(s => s.UserId) // Giả sử có UserId
+												.Take(5) // Lấy 5 nhà cung cấp mới nhất
 												.ToList();
 			}
 			catch (HttpRequestException ex)
