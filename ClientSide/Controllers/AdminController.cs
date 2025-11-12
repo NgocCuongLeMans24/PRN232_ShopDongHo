@@ -1,6 +1,4 @@
 ﻿using ClientSide.DataDtos;
-// --- DÙNG NAMESPACE MỚI ---
-using ClientSide.DataDtos;
 using ClientSide.Utils;
 using ClientSide.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace ClientSide.Controllers
 {
@@ -17,7 +16,6 @@ namespace ClientSide.Controllers
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IHttpContextAccessor _httpContextAccessor;
 
-		// URL của API backend (ServerSide)
 		private readonly string _urlBase = MyTools.getUrl();
 
 		public AdminController(IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor)
@@ -28,43 +26,68 @@ namespace ClientSide.Controllers
 
 		public async Task<IActionResult> Index()
 		{
-			// Lấy token từ Session (giả sử đã lưu khi Login)
+			var userRole = _httpContextAccessor.HttpContext?.Session.GetString("UserRole");
 			var token = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken");
 
+			if (string.IsNullOrEmpty(userRole) || !userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+			{
+				_httpContextAccessor.HttpContext?.Session.Clear();
+				return RedirectToAction("Login", "Account");
+			}
 			if (string.IsNullOrEmpty(token))
 			{
 				return RedirectToAction("Login", "Account");
 			}
 
-			// Dùng ViewModel mới
-			var viewModel = new AdminDashboardViewModel();
 			var client = _httpClientFactory.CreateClient();
-
-			// Gắn token vào header
 			client.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", token);
 
+			var viewModel = new AdminDashboardViewModel();
+
 			try
 			{
-				// Gọi API và gán vào các danh sách DTO
-				viewModel.Users = await GetApiData<List<UserDto>>(client, $"{_urlBase}/api/Users");
-				viewModel.Products = await GetApiData<List<ProductDto>>(client, $"{_urlBase}/api/Products");
-				viewModel.Orders = await GetApiData<List<OrderDto>>(client, $"{_urlBase}/api/Orders");
+				var allCustomers = await GetApiData<List<UserDto>>(client, $"{_urlBase}/api/Users");
+				var allProducts = await GetApiData<List<ProductDto>>(client, $"{_urlBase}/api/Products");
+				var allOrders = await GetApiData<List<OrderDto>>(client, $"{_urlBase}/api/Orders");
+
+				viewModel.Users = allCustomers;
+				viewModel.Products = allProducts;
+				viewModel.Orders = allOrders;
+
+				viewModel.TotalCustomerCount = allCustomers.Count;
+				viewModel.TotalProductCount = allProducts.Count;
+				viewModel.TotalOrderCount = allOrders.Count;
+				viewModel.TotalSupplierCount = 0;
+
+				// Điền các danh sách rút gọn (cho 2 thẻ dưới)
+				viewModel.RecentCustomers = allCustomers
+												.OrderByDescending(c => c.UserId) // Giả sử có UserId
+												.Take(5) // Lấy 5 người mới nhất
+												.ToList();
+
+				viewModel.RecentProducts = allProducts
+												.OrderByDescending(p => p.ProductId) // Giả sử có ProductId
+												.Take(5) // Lấy 5 sản phẩm mới nhất
+												.ToList();
 			}
 			catch (HttpRequestException ex)
 			{
 				ViewBag.Error = $"Lỗi khi gọi API: {ex.Message}";
-				// Xử lý lỗi 401/403
 				if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
 					ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
 				{
 					_httpContextAccessor.HttpContext?.Session.Clear();
 					return RedirectToAction("Login", "Account");
 				}
+				// Nếu lỗi, trả về ViewModel trống để View không bị crash
+				return View(new AdminDashboardViewModel());
 			}
 
 			return View(viewModel);
 		}
+
+
 
 		// Hàm hỗ trợ gọi API
 		private async Task<T> GetApiData<T>(HttpClient client, string url)

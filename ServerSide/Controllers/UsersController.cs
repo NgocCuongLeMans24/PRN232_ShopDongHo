@@ -1,12 +1,14 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.EntityFrameworkCore;
+using ServerSide.DataDtos;
+using ServerSide.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ServerSide.Models;
-using Microsoft.AspNetCore.Authorization;
 
 namespace ServerSide.Controllers
 {
@@ -46,11 +48,28 @@ namespace ServerSide.Controllers
 		// PUT: api/Users/5
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPut("{id}")]
-		public async Task<IActionResult> PutUser(int id, User user)
+		public async Task<IActionResult> PutUser(int id, UserEditDto userDto)
 		{
-			if (id != user.UserId)
+			var user = await _context.Users.FindAsync(id);
+			if (user == null)
 			{
-				return BadRequest();
+				return NotFound();
+			}
+
+			// 4. Cập nhật các trường từ DTO
+			user.Email = userDto.Email;
+			user.FullName = userDto.FullName;
+			user.PhoneNumber = userDto.PhoneNumber;
+			user.Address = userDto.Address;
+			user.RoleId = userDto.RoleId;
+			user.IsActive = userDto.IsActive;
+			user.UpdatedAt = DateTime.UtcNow;
+
+			// 5. Xử lý mật khẩu (CHỈ CẬP NHẬT NẾU CÓ NHẬP)
+			if (!string.IsNullOrEmpty(userDto.Password))
+			{
+				// Gán thẳng mật khẩu plain-text (theo logic của bạn)
+				user.PasswordHash = userDto.Password;
 			}
 
 			_context.Entry(user).State = EntityState.Modified;
@@ -61,7 +80,7 @@ namespace ServerSide.Controllers
 			}
 			catch (DbUpdateConcurrencyException)
 			{
-				if (!UserExists(id))
+				if (!_context.Users.Any(e => e.UserId == id))
 				{
 					return NotFound();
 				}
@@ -70,19 +89,41 @@ namespace ServerSide.Controllers
 					throw;
 				}
 			}
-
 			return NoContent();
 		}
 
 		// POST: api/Users
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPost]
-		public async Task<ActionResult<User>> PostUser(User user)
+		public async Task<ActionResult<User>> PostUser(UserCreateDto userDto)
 		{
+
+			// 4. Chuyển đổi DTO sang Model "User"
+			var user = new User
+			{
+				Username = userDto.Username,
+				PasswordHash = userDto.Password,
+				Email = userDto.Email,
+				FullName = userDto.FullName,
+				RoleId = userDto.RoleId,
+				PhoneNumber = userDto.PhoneNumber,
+				Address = userDto.Address,
+				IsActive = true,
+				CreatedAt = DateTime.UtcNow
+			};
+
 			_context.Users.Add(user);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction("GetUser", new { id = user.UserId }, user);
+			var userResponseDto = new
+			{
+				user.UserId,
+				user.Username,
+				user.FullName,
+				user.RoleId
+			};
+
+			return CreatedAtAction("GetUser", new { id = user.UserId }, userResponseDto);
 		}
 
 		// DELETE: api/Users/5

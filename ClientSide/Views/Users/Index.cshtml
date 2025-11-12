@@ -1,0 +1,96 @@
+﻿@* 1. Model bây giờ là UserListViewModel *@
+@model ClientSide.ViewModels.UserListViewModel
+
+@{
+    ViewData["Title"] = "Quản lý Người dùng";
+}
+
+<div class="container-fluid pt-4 px-4">
+    <div class="bg-light rounded h-100 p-4">
+        <h1 class="mb-4">Danh sách Người dùng</h1>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">@ViewBag.Error</div>
+        }
+
+        <p>
+            <a asp-action="Create" asp-controller="Users" class="btn btn-primary">Thêm Người dùng mới</a>
+            <a asp-action="Index" asp-controller="Admin" class="btn btn-secondary">Quay lại Dashboard</a>
+        </p>
+
+        <form asp-action="Index" method="get" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="searchTerm" class="form-control" placeholder="Tìm theo tên hoặc username..." value="@Model.SearchTerm" />
+                </div>
+                <div class="col-md-4">
+                    <select name="roleFilter" class="form-select" asp-for="RoleFilter">
+                        <option value="All">Tất cả vai trò</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Supplier">Supplier</option>
+                        <option value="Customer">Customer</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-info w-100">Tìm kiếm</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Tên đăng nhập</th>
+                        <th scope="col">Họ và tên</th>
+                        <th scope="col">Vai trò</th>
+                        <th scope="col">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>@user.UserId</td>
+                            <td>@user.Username</td>
+                            <td>@user.FullName</td>
+                            <td>@user.RoleName</td>
+                            <td>
+                                <a asp-action="Edit" asp-controller="Users" asp-route-id="@user.UserId" class="btn btn-sm btn-warning">Sửa</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-end">
+
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-pageNumber="@(Model.PageNumber - 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-roleFilter="@Model.RoleFilter">Previous</a>
+                </li>
+
+                <li class="page-item active" aria-current="page">
+                    <a class="page-link" href="#">@Model.PageNumber / @Model.TotalPages</a>
+                </li>
+
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-pageNumber="@(Model.PageNumber + 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-roleFilter="@Model.RoleFilter">Next</a>
+                </li>
+            </ul>
+        </nav>
+        <span class="float-end">Tổng số: @Model.TotalCount</span>
+
+    </div>
+</div>
