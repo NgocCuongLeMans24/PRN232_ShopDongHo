@@ -71,6 +71,9 @@ namespace ServerSide
 
             app.UseHttpsRedirection();
 
+            // Cấu hình static files để serve ảnh
+            app.UseStaticFiles();
+
             app.UseCors("AllowClient");
 
             app.UseAuthentication();

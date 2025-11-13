@@ -9,10 +9,11 @@
 <h2 class="mb-3">Thêm sản phẩm mới</h2>
 
 <div class="mb-3">
-    <a asp-action="Index" class="btn btn-secondary">&laquo; Quay lại danh sách</a>
+    <a asp-action="Products" class="btn btn-secondary">&laquo; Quay lại danh sách</a>
 </div>
 
 <form asp-action="Create" method="post" enctype="multipart/form-data" class="row g-3">
+    <input type="hidden" asp-for="Image" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="col-md-6">
         <label asp-for="ProductCode" class="form-label"></label>
