@@ -23,8 +23,67 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Products" asp-action="Index">Sản phẩm</a>
                         </li>
+                        @{
+                            var userInfoJson = Context.Session.GetString("UserInfo");
+                            var isLoggedIn = !string.IsNullOrEmpty(userInfoJson);
+                            var isSupplier = false;
+                            if (isLoggedIn)
+                            {
+                                try
+                                {
+                                    var userInfo = System.Text.Json.JsonSerializer.Deserialize<UserDto>(userInfoJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                    isSupplier = userInfo?.RoleName == "Supplier";
+                                }
+                                catch { }
+                            }
+                        }
+                        @if (isSupplier)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Supplier" asp-action="Products">Quản lý sản phẩm</a>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Đơn hàng của tôi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="History">Lịch sử mua hàng</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        @{
+                            var userInfoJson2 = Context.Session.GetString("UserInfo");
+                            var isLoggedIn2 = !string.IsNullOrEmpty(userInfoJson2);
+                        }
+                        @if (isLoggedIn2)
+                        {
+                            @try
+                            {
+                                var userInfo2 = System.Text.Json.JsonSerializer.Deserialize<UserDto>(userInfoJson2, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                <li class="nav-item">
+                                    <span class="nav-link text-dark">Xin chào, @userInfo2?.FullName</span>
+                                </li>
+                            }
+                            catch
+                            {
+                                <li class="nav-item">
+                                    <span class="nav-link text-dark">Đã đăng nhập</span>
+                                </li>
+                            }
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm ms-2">Đăng xuất</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>

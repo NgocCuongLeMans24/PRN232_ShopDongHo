@@ -26,7 +26,6 @@ namespace ServerSide
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddCors();
             builder.Services.AddDbContext<Prn232ClockShopContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn")));
 
@@ -41,7 +40,6 @@ namespace ServerSide
                         .AllowCredentials()); // nếu muốn gửi cookie / auth
             });
 
-            builder.Services.AddControllers();
             var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).
                 AddJwtBearer(opt =>
@@ -58,9 +56,10 @@ namespace ServerSide
                         IssuerSigningKey = new SymmetricSecurityKey(key)
                     };
                 });
+			builder.Services.AddAuthorization();
 
 
-            var app = builder.Build();
+			var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -70,6 +69,9 @@ namespace ServerSide
             }
 
             app.UseHttpsRedirection();
+
+            // Cấu hình static files để serve ảnh
+            app.UseStaticFiles();
 
             app.UseCors("AllowClient");
 
