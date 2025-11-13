@@ -44,7 +44,7 @@ namespace ClientSide
 
             app.MapControllerRoute(
 				name: "default",
-				pattern: "{controller=Products}/{action=Index}");
+				pattern: "{controller=Account}/{action=Login}");
 
 			app.Run();
 		}

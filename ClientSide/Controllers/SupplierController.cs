@@ -279,7 +279,7 @@ public class SupplierController : Controller
             Description = product.Description,
             Image = product.Image,
             Price = product.Price,
-            StockQuantity = product.StockQuantity,
+            StockQuantity = product.StockQuantity ?? 0,
             IsActive = product.IsActive ?? true
         };
 

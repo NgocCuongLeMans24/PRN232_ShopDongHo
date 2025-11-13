@@ -20,8 +20,6 @@ namespace ServerSide.DataDtos
 
 		[Required(ErrorMessage = "Vai trò là bắt buộc")]
 		public int RoleId { get; set; }
-
-		// Các trường tùy chọn (optional)
 		public string? PhoneNumber { get; set; }
 		public string? Address { get; set; }
 	}

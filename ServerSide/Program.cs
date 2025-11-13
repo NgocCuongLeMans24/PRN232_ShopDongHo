@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ServerSide.Models;
+using ServerSide.Utils;
 using System.Text;
 
 namespace ServerSide
@@ -28,7 +29,7 @@ namespace ServerSide
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<Prn232ClockShopContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn")));
-
+            builder.Services.AddScoped<EmailService>();
             // Thêm dịch vụ CORS
             builder.Services.AddCors(options =>
             {
