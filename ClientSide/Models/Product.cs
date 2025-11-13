@@ -21,7 +21,7 @@ public partial class Product
 
     public decimal Price { get; set; }
 
-    public int StockQuantity { get; set; }
+    public int? StockQuantity { get; set; }
 
     public bool? IsActive { get; set; }
 
@@ -30,8 +30,6 @@ public partial class Product
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Brand Brand { get; set; } = null!;
-
-    public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
 
     public virtual Category Category { get; set; } = null!;
 

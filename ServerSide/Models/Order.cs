@@ -33,5 +33,5 @@ public partial class Order
 
     public virtual User? ProcessedByNavigation { get; set; }
 
-    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public virtual Review? Review { get; set; }
 }

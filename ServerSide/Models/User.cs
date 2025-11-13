@@ -27,7 +27,11 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
+    public string? VerificationToken { get; set; }
+
+    public DateTime? VerificationTokenExpire { get; set; }
+
+    public bool? IsVerified { get; set; }
 
     public virtual ICollection<Order> OrderCustomers { get; set; } = new List<Order>();
 
