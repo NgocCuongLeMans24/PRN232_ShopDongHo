@@ -1,10 +1,7 @@
 ﻿using ClientSide.DataDtos;
 using ClientSide.Models;
 using ClientSide.Utils;
-using ClientSide.Utils;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.Json;
 
@@ -29,7 +26,7 @@ namespace ClientSide.Controllers
                 client.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                // 4️⃣ Lấy thông tin user hiện tại
+                // Lấy thông tin user hiện tại
                 HttpResponseMessage resUser = await client.GetAsync(urlBase + "/api/Auth/current-user");
                 if (!resUser.IsSuccessStatusCode)
                 {
@@ -50,23 +47,77 @@ namespace ClientSide.Controllers
                     return RedirectToAction("Index", "Products");
                 }
 
-                using (HttpResponseMessage res = await client.GetAsync(urlBase + "/api/Orders/GetOrdersByCustomerId/" + customerId))
+                using HttpResponseMessage res = await client.GetAsync(urlBase + "/api/Orders/GetOrdersByCustomerId/" + customerId);
+                if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    using (HttpContent cont = res.Content)
-                    {
-                        string result = await cont.ReadAsStringAsync();
-                        List<Order> od = JsonSerializer.Deserialize<List<Order>>(
-                            result, new JsonSerializerOptions
-                            {
-                                PropertyNameCaseInsensitive = true
-                            });
-                        orders = od;
-                    }
+                    orders = new List<Order>();
+                }
+                else if (res.IsSuccessStatusCode)
+                {
+                    string result = await res.Content.ReadAsStringAsync();
+                    orders = JsonSerializer.Deserialize<List<Order>>(
+                        result, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        }) ?? new List<Order>();
+                }
+                else
+                {
+                    TempData["Error"] = "Không thể tải danh sách đơn hàng.";
+                    return RedirectToAction("Index", "Products");
                 }
             }
 
-            ViewBag.orders = orders;
-            return View();
+            return View(orders);
+        }
+
+        public async Task<IActionResult> History()
+        {
+            string token = HttpContext.Session.GetString("JwtToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                TempData["Error"] = "Bạn cần đăng nhập để xem lịch sử mua hàng!";
+                return RedirectToAction("Index", "Products");
+            }
+
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage resUser = await client.GetAsync(urlBase + "/api/Auth/current-user");
+            if (!resUser.IsSuccessStatusCode)
+            {
+                TempData["Error"] = "Không thể lấy thông tin người dùng!";
+                return RedirectToAction("Index", "Products");
+            }
+
+            string userJson = await resUser.Content.ReadAsStringAsync();
+            var currentUser = JsonSerializer.Deserialize<UserDto>(userJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            int customerId = currentUser?.UserId ?? 0;
+            if (customerId == 0)
+            {
+                TempData["Error"] = "Bạn cần đăng nhập để xem lịch sử mua hàng!";
+                return RedirectToAction("Index", "Products");
+            }
+
+            HttpResponseMessage resHistory = await client.GetAsync(urlBase + "/api/Orders/GetPurchaseHistory/" + customerId);
+            if (!resHistory.IsSuccessStatusCode)
+            {
+                TempData["Error"] = "Không thể tải lịch sử mua hàng.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            string historyJson = await resHistory.Content.ReadAsStringAsync();
+            var history = JsonSerializer.Deserialize<List<PurchaseHistoryItemDto>>(historyJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<PurchaseHistoryItemDto>();
+
+            return View(history);
         }
 
         [HttpPost]
@@ -102,7 +153,7 @@ namespace ClientSide.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateFromProduct(int ProductId, int Quantity = 1)
         {
-            // 1️⃣ Lấy token từ session
+            // Lấy token từ session
             string token = HttpContext.Session.GetString("JwtToken");
             if (string.IsNullOrEmpty(token))
             {
@@ -114,11 +165,11 @@ namespace ClientSide.Controllers
             {
                 client.BaseAddress = new Uri(urlBase);
 
-                // 2️⃣ Gửi token qua header Authorization
+                // Gửi token qua header Authorization
                 client.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                // 3️⃣ Lấy thông tin sản phẩm
+                // Lấy thông tin sản phẩm
                 HttpResponseMessage resProduct = await client.GetAsync($"/api/Products/{ProductId}");
                 if (!resProduct.IsSuccessStatusCode)
                 {
@@ -138,7 +189,7 @@ namespace ClientSide.Controllers
                     return RedirectToAction("Index", "Products");
                 }
 
-                // 4️⃣ Lấy thông tin user hiện tại
+                // Lấy thông tin user hiện tại
                 HttpResponseMessage resUser = await client.GetAsync("/api/Auth/current-user");
                 if (!resUser.IsSuccessStatusCode)
                 {
@@ -159,7 +210,7 @@ namespace ClientSide.Controllers
                     return RedirectToAction("Index", "Products");
                 }
 
-                // 5️⃣ Tạo order
+                // Tạo order
                 var orderRequest = new
                 {
                     OrderCode = "ORD" + DateTime.Now.Ticks,

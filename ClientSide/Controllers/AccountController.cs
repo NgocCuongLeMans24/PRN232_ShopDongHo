@@ -3,6 +3,8 @@ using ClientSide.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
 namespace ClientSide.Controllers
 {
@@ -42,10 +44,32 @@ namespace ClientSide.Controllers
                 PropertyNameCaseInsensitive = true
             });
 
-            // Lưu token vào Session
-            HttpContext.Session.SetString("JwtToken", loginData.Token);
-            HttpContext.Session.SetString("UserInfo", JsonSerializer.Serialize(loginData.User));
+			var userRole = loginData.User?.RoleName ?? "Customer";
 
+			// Lưu token vào Session
+			HttpContext.Session.SetString("JwtToken", loginData.Token);
+			HttpContext.Session.SetString("UserRole", userRole);
+			HttpContext.Session.SetString("UserInfo", JsonSerializer.Serialize(loginData.User));
+
+			if (userRole == "Admin")
+			{
+				return RedirectToAction("Index", "Admin");
+			}
+			else if (userRole == "Staff")
+			{
+				
+				return RedirectToAction("Index", "Supplier");
+			}
+			else
+			{
+				return RedirectToAction("Index", "Products");
+			}
+		}
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
             return RedirectToAction("Index", "Products");
         }
 

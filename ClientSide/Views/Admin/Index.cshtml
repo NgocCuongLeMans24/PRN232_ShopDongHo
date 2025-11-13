@@ -1,0 +1,344 @@
+﻿@* 1. Trỏ model về ViewModel mới (bạn đã làm đúng ở controller) *@
+@model ClientSide.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<style>
+    :root {
+        --dash-bg: linear-gradient(120deg, #6e48aa, #9673de);
+        --dash-card-bg: #ffffff;
+        --dash-text: #333;
+        --dash-text-light: #555;
+        --dash-text-active: #888;
+        --dash-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --dash-radius: 12px;
+        --dash-btn-primary: #7552c2;
+        --dash-btn-secondary: #f0f0f0;
+        --dash-btn-primary-text: #fff;
+        --dash-btn-secondary-text: #555;
+    }
+
+    body {
+        background-color: #f4f7fa; /* Màu nền xám nhạt */
+    }
+
+    .admin-dashboard-container {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        color: var(--dash-text);
+        padding: 20px;
+    }
+
+    .dash-header {
+        background: var(--dash-bg);
+        color: white;
+        padding: 24px;
+        border-radius: var(--dash-radius);
+        margin-bottom: 24px;
+        box-shadow: var(--dash-shadow);
+    }
+
+        .dash-header h1 {
+            margin: 0;
+            font-size: 2.25rem;
+            font-weight: 600;
+        }
+
+        .dash-header p {
+            margin: 0;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+    .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .dash-grid-col-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .dash-card {
+        background: var(--dash-card-bg);
+        border-radius: var(--dash-radius);
+        box-shadow: var(--dash-shadow);
+        padding: 24px;
+        overflow: hidden;
+    }
+
+    .stat-card {
+        position: relative;
+    }
+
+        .stat-card .title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dash-text-light);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dash-text);
+        }
+
+        .stat-card .note {
+            font-size: 0.85rem;
+            color: var(--dash-text-active);
+        }
+
+        .stat-card .icon {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+    .management-card h3 {
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-weight: 600;
+    }
+
+    .management-card .actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .dash-btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background: var(--dash-btn-primary);
+        color: var(--dash-btn-primary-text);
+    }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+    .btn-secondary {
+        background: var(--dash-btn-secondary);
+        color: var(--dash-btn-secondary-text);
+    }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+    .list-card h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .list-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+        .list-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .list-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--dash-btn-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+        .list-avatar.avatar-product {
+            background: #00c19a; /* Màu xanh cho sản phẩm */
+        }
+        /* --- THÊM CSS NÀY --- */
+        .list-avatar.avatar-supplier {
+            background: #e66b4c; /* Màu cam cho supplier */
+        }
+
+        .list-avatar.avatar-order {
+            background: #4ac3e6; /* Màu xanh cho order */
+        }
+
+    .list-info .name {
+        font-weight: 600;
+        color: var(--dash-text);
+    }
+
+    .list-info .detail {
+        font-size: 0.85rem;
+        color: var(--dash-text-light);
+    }
+</style>
+
+<div class="admin-dashboard-container">
+
+    <div class="dash-header">
+        <h1>Admin Dashboard</h1>
+        <p>Manage your e-commerce platform</p>
+    </div>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">@ViewBag.Error</div>
+    }
+
+    <div class="dash-grid" style="margin-bottom: 20px;">
+        <div class="dash-card stat-card">
+            <div class="title">Total Customers</div>
+            <div class="value">@Model.TotalCustomerCount</div>
+            <div class="note">@Model.TotalCustomerCount active</div>
+            <div class="icon" style="color: #5552c2;">🧑‍🤝‍🧑</div>
+        </div>
+
+        <div class="dash-card stat-card">
+            <div class="title">Total Suppliers</div>
+            <div class="value">@Model.TotalSupplierCount</div>
+            <div class="note">All active</div>
+            <div class="icon" style="color: #e66b4c;">🧑‍💼</div>
+        </div>
+
+        <div class="dash-card stat-card">
+            <div class="title">Total Orders</div>
+            <div class="value">@Model.TotalOrderCount</div>
+            <div class="note">&nbsp;</div>
+            <div class="icon" style="color: #4ac3e6;">🛒</div>
+        </div>
+
+        <div class="dash-card stat-card">
+            <div class="title">Total Products</div>
+            <div class="value">@Model.TotalProductCount</div>
+            <div class="note">&nbsp;</div>
+            <div class="icon" style="color: #00c19a;">📦</div>
+        </div>
+    </div>
+
+    <div class="dash-grid" style="margin-bottom: 20px;">
+
+        <div class="dash-card management-card">
+            <h3>Customer Management</h3>
+            <div class="actions">
+                <a asp-action="Customer" asp-controller="Users" class="dash-btn btn-secondary">View All Customers</a>
+            </div>
+        </div>
+
+        <div class="dash-card management-card">
+            <h3>Supplier Management</h3>
+            <div class="actions">
+                <a asp-action="Supplier" asp-controller="Users" class="dash-btn btn-secondary">View All Suppliers</a>
+            </div>
+        </div>
+
+        <div class="dash-card management-card">
+            <h3>Order Management</h3>
+            <div class="actions">
+                <a asp-action="AdminOrders" asp-controller="Admin" class="dash-btn btn-secondary">View All Orders</a>
+            </div>
+        </div>
+
+        <div class="dash-card management-card">
+            <h3>Product Management</h3>
+            <div class="actions">
+                <a asp-action="AdminProducts" asp-controller="Admin" class="dash-btn btn-secondary">View All Products</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="dash-grid-col-2">
+
+        <div class="dash-card list-card">
+            <h3>Recent Customers</h3>
+            @foreach (var customer in Model.RecentCustomers)
+            {
+                <div class="list-item">
+                    <div class="list-avatar">
+                        @(!string.IsNullOrEmpty(customer.FullName) ? customer.FullName.Substring(0, 1) : "C")
+                    </div>
+                    <div class="list-info">
+                        <div class="name">@(customer.FullName ?? "N/A")</div>
+                        <div class="detail">@(customer.Username ?? "N/A")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="dash-card list-card">
+            <h3>Recent Suppliers</h3>
+            @foreach (var supplier in Model.RecentSuppliers)
+            {
+                <div class="list-item">
+                    <div class="list-avatar avatar-supplier">
+                        @(!string.IsNullOrEmpty(supplier.FullName) ? supplier.FullName.Substring(0, 1) : "S")
+                    </div>
+                    <div class="list-info">
+                        <div class="name">@(supplier.FullName ?? "N/A")</div>
+                        <div class="detail">@(supplier.Username ?? "N/A")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="dash-card list-card">
+            <h3>Recent Orders</h3>
+            @foreach (var order in Model.RecentOrders)
+            {
+                <div class="list-item">
+                    <div class="list-avatar avatar-order">
+                        @* Giả sử OrderDto có OrderId *@
+                        <span style="font-size: 0.8em;">#@order.OrderId</span>
+                    </div>
+                    <div class="list-info">
+                        <div class="name">@order.TotalAmount.ToString("N0") VND</div>
+
+                        <div class="detail">Ngày đặt: @order.CreatedAt?.ToString("dd/MM/yyyy hh:mm tt")</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="dash-card list-card">
+            <h3>Recent Products</h3>
+            @foreach (var product in Model.RecentProducts)
+            {
+                <div class="list-item">
+                    <div class="list-avatar avatar-product">
+                        @* (Đã sửa lỗi null ProductName từ trước) *@
+                        @(!string.IsNullOrEmpty(product.ProductName) ? product.ProductName.Substring(0, 1) : "P")
+                    </div>
+                    <div class="list-info">
+                        <div class="name">@(product.ProductName ?? "Sản phẩm không tên")</div>
+                        <div class="detail">@product.Price.ToString("N0") VND</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,54 @@
+@model IList<ClientSide.DataDtos.PurchaseHistoryItemDto>
+
+@{
+    ViewData["Title"] = "Lịch sử mua hàng";
+}
+
+<h2 class="mb-3">Lịch sử mua hàng</h2>
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary">&laquo; Quay lại đơn hàng</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-info">Bạn chưa có lịch sử mua hàng.</div>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Mã đơn</th>
+                <th>Ngày mua</th>
+                <th>Sản phẩm</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+                <th>Trạng thái đơn</th>
+                <th>Thanh toán</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.OrderCode</td>
+                    <td>@item.OrderDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@item.ProductName</td>
+                    <td>@item.Quantity</td>
+                    <td>@string.Format("{0:N0} VNĐ", item.Price)</td>
+                    <td>@string.Format("{0:N0} VNĐ", item.TotalPrice)</td>
+                    <td>@item.OrderStatus</td>
+                    <td>@item.PaymentStatus</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
