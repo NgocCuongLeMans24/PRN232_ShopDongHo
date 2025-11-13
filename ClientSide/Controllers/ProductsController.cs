@@ -53,6 +53,54 @@ public class ProductsController : Controller
         string json = await res.Content.ReadAsStringAsync();
         Product product = JsonSerializer.Deserialize<Product>(json, _jsonOptions) ?? new Product();
 
+        // Get reviews for this product
+        try
+        {
+            var reviewsRes = await client.GetAsync($"{_urlBase}/api/Reviews/GetByProduct/{id}");
+            if (reviewsRes.IsSuccessStatusCode)
+            {
+                var reviewsJson = await reviewsRes.Content.ReadAsStringAsync();
+                var reviewsData = JsonSerializer.Deserialize<ProductReviewsDto>(reviewsJson, _jsonOptions);
+                ViewBag.Reviews = reviewsData;
+            }
+        }
+        catch
+        {
+            // If reviews fail, continue without reviews
+            ViewBag.Reviews = null;
+        }
+
+        // Check if current user can review (has purchased this product)
+        var currentUser = GetCurrentUser();
+        if (currentUser != null)
+        {
+            string? token = HttpContext.Session.GetString("JwtToken");
+            if (!string.IsNullOrEmpty(token))
+            {
+                using var authClient = new HttpClient { BaseAddress = new Uri(_urlBase) };
+                authClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                
+                try
+                {
+                    var ordersRes = await authClient.GetAsync($"/api/Orders/GetOrdersByCustomerId/{currentUser.UserId}");
+                    if (ordersRes.IsSuccessStatusCode)
+                    {
+                        var ordersJson = await ordersRes.Content.ReadAsStringAsync();
+                        var orders = JsonSerializer.Deserialize<List<Order>>(ordersJson, _jsonOptions) ?? new List<Order>();
+                        var hasPurchased = orders
+                            .Where(o => o.OrderStatus == "Đã Xác Nhận")
+                            .SelectMany(o => o.OrderDetails ?? new List<OrderDetail>())
+                            .Any(od => od.ProductId == id);
+                        ViewBag.CanReview = hasPurchased;
+                    }
+                }
+                catch
+                {
+                    ViewBag.CanReview = false;
+                }
+            }
+        }
+
         return View(product);
     }
 
