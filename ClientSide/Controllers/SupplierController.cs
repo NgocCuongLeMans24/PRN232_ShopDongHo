@@ -12,7 +12,7 @@ namespace ClientSide.Controllers;
 
 public class SupplierController : Controller
 {
-    private readonly string _urlBase = MyTools.getUrl();
+    private readonly string _urlBase = MyTools.getUrl().TrimEnd('/');
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -38,6 +38,21 @@ public class SupplierController : Controller
 
     private bool IsSupplier(UserDto? user) =>
         user != null && string.Equals(user.RoleName, "Supplier", StringComparison.OrdinalIgnoreCase);
+
+    private string NormalizeImageUrl(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return string.Empty;
+        }
+
+        if (imagePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            return imagePath;
+        }
+
+        return $"{_urlBase}/{imagePath.TrimStart('/')}";
+    }
 
     // GET: Supplier/Products - Danh sách sản phẩm của Supplier
     public async Task<IActionResult> Products()
@@ -68,6 +83,11 @@ public class SupplierController : Controller
 
         var content = await response.Content.ReadAsStringAsync();
         var products = JsonSerializer.Deserialize<List<Product>>(content, _jsonOptions) ?? new List<Product>();
+
+        foreach (var product in products)
+        {
+            product.Image = NormalizeImageUrl(product.Image);
+        }
 
         return View(products);
     }
@@ -100,6 +120,10 @@ public class SupplierController : Controller
 
         var content = await response.Content.ReadAsStringAsync();
         var product = JsonSerializer.Deserialize<Product>(content, _jsonOptions);
+        if (product != null)
+        {
+            ViewBag.DisplayImageUrl = NormalizeImageUrl(product.Image);
+        }
 
         return View(product);
     }
@@ -134,6 +158,7 @@ public class SupplierController : Controller
         if (!ModelState.IsValid)
         {
             await PopulateSelectLists();
+            ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
             return View(model);
         }
 
@@ -162,13 +187,15 @@ public class SupplierController : Controller
             {
                 var uploadResult = await uploadResponse.Content.ReadAsStringAsync();
                 var uploadData = JsonSerializer.Deserialize<UploadResponse>(uploadResult, _jsonOptions);
-                imageUrl = uploadData?.Url;
+                imageUrl = uploadData?.RelativeUrl ?? uploadData?.Url;
+                model.Image = imageUrl;
             }
             else
             {
                 var errorMsg = await uploadResponse.Content.ReadAsStringAsync();
                 TempData["Error"] = $"Lỗi khi tải ảnh lên: {errorMsg}";
                 await PopulateSelectLists();
+                ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
                 return View(model);
             }
         }
@@ -203,6 +230,7 @@ public class SupplierController : Controller
         string apiError = await response.Content.ReadAsStringAsync();
         TempData["Error"] = $"Không thể thêm sản phẩm. Chi tiết: {apiError}";
         await PopulateSelectLists();
+        ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
         return View(model);
     }
 
@@ -255,6 +283,8 @@ public class SupplierController : Controller
             IsActive = product.IsActive ?? true
         };
 
+        ViewBag.CurrentImageUrl = NormalizeImageUrl(product.Image);
+
         return View(viewModel);
     }
 
@@ -273,6 +303,7 @@ public class SupplierController : Controller
         if (!ModelState.IsValid)
         {
             await PopulateSelectLists();
+            ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
             return View(model);
         }
 
@@ -300,7 +331,8 @@ public class SupplierController : Controller
             {
                 var uploadResult = await uploadResponse.Content.ReadAsStringAsync();
                 var uploadData = JsonSerializer.Deserialize<UploadResponse>(uploadResult, _jsonOptions);
-                imageUrl = uploadData?.Url;
+                imageUrl = uploadData?.RelativeUrl ?? uploadData?.Url;
+                model.Image = imageUrl;
             }
         }
 
@@ -334,6 +366,7 @@ public class SupplierController : Controller
         string apiError = await response.Content.ReadAsStringAsync();
         TempData["Error"] = $"Không thể cập nhật sản phẩm. Chi tiết: {apiError}";
         await PopulateSelectLists();
+        ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
         return View(model);
     }
 
@@ -405,6 +438,7 @@ public class SupplierController : Controller
     private class UploadResponse
     {
         public string? Url { get; set; }
+        public string? RelativeUrl { get; set; }
         public string? FileName { get; set; }
     }
 }

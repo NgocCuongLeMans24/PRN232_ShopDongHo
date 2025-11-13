@@ -8,11 +8,26 @@ namespace ClientSide.Controllers;
 
 public class ProductsController : Controller
 {
-    private readonly string _urlBase = MyTools.getUrl();
+    private readonly string _urlBase = MyTools.getUrl().TrimEnd('/');
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
+
+    private string NormalizeImageUrl(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return string.Empty;
+        }
+
+        if (imagePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            return imagePath;
+        }
+
+        return $"{_urlBase}/{imagePath.TrimStart('/')}";
+    }
 
     // GET: Products - Danh sách sản phẩm (cho Customer xem)
     public async Task<IActionResult> Index()
@@ -27,6 +42,11 @@ public class ProductsController : Controller
 
         var content = await response.Content.ReadAsStringAsync();
         var products = JsonSerializer.Deserialize<List<Product>>(content, _jsonOptions) ?? new List<Product>();
+
+        foreach (var product in products)
+        {
+            product.Image = NormalizeImageUrl(product.Image);
+        }
 
         return View(products);
     }
@@ -44,6 +64,7 @@ public class ProductsController : Controller
 
         string json = await res.Content.ReadAsStringAsync();
         Product product = JsonSerializer.Deserialize<Product>(json, _jsonOptions) ?? new Product();
+        product.Image = NormalizeImageUrl(product.Image);
 
         return View(product);
     }

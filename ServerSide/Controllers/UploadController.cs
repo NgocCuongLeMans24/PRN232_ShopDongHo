@@ -63,9 +63,10 @@ public class UploadController : ControllerBase
             }
 
             // Trả về full URL để client có thể truy cập
+            var relativeUrl = $"/images/products/{fileName}";
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var imageUrl = $"{baseUrl}/images/products/{fileName}";
-            return Ok(new { url = imageUrl, fileName = fileName });
+            var imageUrl = $"{baseUrl}{relativeUrl}";
+            return Ok(new { url = imageUrl, fileName = fileName, relativeUrl });
         }
         catch (Exception ex)
         {
