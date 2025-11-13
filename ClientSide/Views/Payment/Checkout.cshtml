@@ -1,0 +1,64 @@
+﻿
+@model ClientSide.ViewModels.CheckoutViewModel
+
+@{
+    ViewData["Title"] = "Thanh toán Đơn hàng";
+}
+
+<div class="container" style="padding: 50px;">
+    <h2>Xác nhận Thanh toán</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-7">
+            <h4>Thông tin đơn hàng</h4>
+            <p><strong>Khách hàng:</strong> @Model.CustomerName</p>
+            <p><strong>Địa chỉ giao hàng:</strong> @Model.ShippingAddress</p>
+            <p><strong>Số điện thoại:</strong> @Model.PhoneNumber</p>
+
+            <h5>Chi tiết sản phẩm</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Giá</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.CartItems)
+                    {
+                        <tr>
+                            <td>@item.ProductName</td>
+                            <td>@item.Quantity</td>
+                            <td>@((item.Price * item.Quantity).ToString("N0")) VND</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card p-3">
+                <h4>Tổng cộng</h4>
+                <h2 class="text-danger">@Model.TotalAmount.ToString("N0") VND</h2>
+                <hr />
+                <p>Chọn phương thức thanh toán:</p>
+
+                <form asp-action="CreatePaymentUrl" asp-controller="Payment" method="post">
+
+                    <input type="hidden" name="orderId" value="@Model.OrderId" />
+                    <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Thanh toán qua VNPay
+                    </button>
+                </form>
+
+                <a asp-action="PlaceOrderCOD" asp-controller="Cart" class="btn btn-secondary w-100 mt-2">
+                    Thanh toán khi nhận hàng (COD)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
