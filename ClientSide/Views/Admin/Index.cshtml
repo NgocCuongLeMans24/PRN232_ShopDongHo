@@ -256,16 +256,16 @@
         </div>
 
         <div class="dash-card management-card">
-            <h3>Product Management</h3>
+            <h3>Order Management</h3>
             <div class="actions">
-                <a asp-action="Index" asp-controller="Products" class="dash-btn btn-secondary">View All Products</a>
+                <a asp-action="AdminOrders" asp-controller="Admin" class="dash-btn btn-secondary">View All Orders</a>
             </div>
         </div>
 
         <div class="dash-card management-card">
-            <h3>Order Management</h3>
+            <h3>Product Management</h3>
             <div class="actions">
-                <a asp-action="Index" asp-controller="Orders" class="dash-btn btn-secondary">View All Orders</a>
+                <a asp-action="AdminProducts" asp-controller="Admin" class="dash-btn btn-secondary">View All Products</a>
             </div>
         </div>
     </div>
@@ -314,9 +314,9 @@
                         <span style="font-size: 0.8em;">#@order.OrderId</span>
                     </div>
                     <div class="list-info">
-                        @* Giả sử OrderDto có TotalAmount *@
                         <div class="name">@order.TotalAmount.ToString("N0") VND</div>
-                        <div class="detail">Ngày đặt: @order.OrderDate.ToString("dd/MM/yyyy")</div>
+
+                        <div class="detail">Ngày đặt: @order.CreatedAt?.ToString("dd/MM/yyyy hh:mm tt")</div>
                     </div>
                 </div>
             }

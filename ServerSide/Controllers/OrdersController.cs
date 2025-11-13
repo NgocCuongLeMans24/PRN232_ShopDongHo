@@ -21,15 +21,36 @@ namespace ServerSide.Controllers
             _context = context;
         }
 
-        // GET: api/Orders
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
-        {
-            return await _context.Orders.ToListAsync();
-        }
+		// GET: api/Orders
+		[HttpGet]
+		public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
+		{
+			var orders = await _context.Orders
+									.Include(o => o.Customer)
+									.Include(o => o.OrderDetails)
+									.ToListAsync();
 
-        // GET: api/Orders/5
-        [HttpGet("{id}")]
+			var orderDtos = orders.Select(o => new
+			{
+				o.OrderId,
+				o.OrderCode,
+				o.CustomerId,
+				o.OrderStatus,
+				o.PaymentStatus,
+				o.PaymentMethod,
+				o.Note,
+				o.ProcessedBy,
+				o.CreatedAt,
+				o.UpdatedAt,
+				CustomerName = o.Customer?.FullName,
+				TotalAmount = o.OrderDetails.Sum(od => od.Quantity * od.Price)
+			});
+
+			return Ok(orderDtos);
+		}
+
+		// GET: api/Orders/5
+		[HttpGet("{id}")]
         public async Task<ActionResult<Order>> GetOrder(int id)
         {
             var order = await _context.Orders.FindAsync(id);
@@ -128,7 +149,7 @@ namespace ServerSide.Controllers
             {
                 OrderCode = dto.OrderCode,
                 CustomerId = dto.CustomerId,
-                OrderStatus = dto.OrderStatus,
+                OrderStatus = dto.OrderStatus = "Đã Xác Nhận",
                 PaymentStatus = dto.PaymentStatus,
                 PaymentMethod = dto.PaymentMethod,
                 Note = dto.Note,

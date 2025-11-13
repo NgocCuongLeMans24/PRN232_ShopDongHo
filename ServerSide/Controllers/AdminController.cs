@@ -97,5 +97,130 @@ namespace ServerSide.Controllers
 				SortOrder = sortOrder
 			});
 		}
+
+
+		[HttpGet("GetOrdersPaged")]
+		public async Task<IActionResult> GetOrdersPaged(
+			[FromQuery] int pageNumber = 1,
+			[FromQuery] int pageSize = 10,
+			[FromQuery] string searchTerm = "",
+			[FromQuery] string statusFilter = "All")
+		{
+
+			var query = _context.Orders
+								.Include(o => o.Customer)
+								.AsQueryable();
+
+			if (!string.IsNullOrEmpty(searchTerm))
+			{
+				query = query.Where(o => o.OrderCode.Contains(searchTerm) ||
+										 (o.Customer != null && o.Customer.FullName.Contains(searchTerm)));
+			}
+
+			if (statusFilter != "All")
+			{
+				query = query.Where(o => o.OrderStatus == statusFilter);
+			}
+
+			query = query.OrderByDescending(o => o.CreatedAt);
+
+			var totalCount = await query.CountAsync();
+
+			var orders = await query
+				.Skip((pageNumber - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			var orderDtos = orders.Select(o => new
+			{
+				o.OrderId,
+				o.OrderCode,
+				o.CustomerId,
+				o.OrderStatus,
+				o.PaymentStatus,
+				o.PaymentMethod,
+				o.Note,
+				o.ProcessedBy,
+				o.CreatedAt,
+				o.UpdatedAt,
+				CustomerName = o.Customer?.FullName,
+				CustomerPhoneNumber = o.Customer?.PhoneNumber
+			}).ToList();
+
+			return Ok(new
+			{
+				Orders = orderDtos,
+				TotalCount = totalCount,
+				PageNumber = pageNumber,
+				PageSize = pageSize,
+				SearchTerm = searchTerm,
+				CustomerPhoneNumber = (string)null,
+				StatusFilter = statusFilter
+			});
+		}
+
+
+		[HttpGet("GetProductsPaged")]
+		public async Task<IActionResult> GetProductsPaged(
+				[FromQuery] int pageNumber = 1,
+				[FromQuery] int pageSize = 10,
+				[FromQuery] string searchTerm = "",
+				[FromQuery] int brandId = 0,     
+				[FromQuery] int categoryId = 0)  
+		{
+			var query = _context.Products
+								.Include(p => p.Brand)
+								.Include(p => p.Category)
+								.AsQueryable();
+
+			if (!string.IsNullOrEmpty(searchTerm))
+			{
+				query = query.Where(p => p.ProductName.Contains(searchTerm) ||
+										 p.ProductCode.Contains(searchTerm));
+			}
+			if (brandId > 0)
+			{
+				query = query.Where(p => p.BrandId == brandId);
+			}
+
+			if (categoryId > 0)
+			{
+				query = query.Where(p => p.CategoryId == categoryId);
+			}
+
+			query = query.OrderByDescending(p => p.CreatedAt);
+
+			var totalCount = await query.CountAsync();
+
+			var products = await query
+				.Skip((pageNumber - 1) * pageSize)
+				.Take(pageSize)
+				.ToListAsync();
+
+			var productDtos = products.Select(p => new
+			{
+				p.ProductId,
+				p.ProductCode,
+				p.ProductName,
+				p.Price,
+				p.StockQuantity,
+				p.IsActive,
+				p.CreatedAt,
+				BrandName = p.Brand.BrandName,
+				CategoryName = p.Category.CategoryName
+			}).ToList();
+
+			// 7. Trả về
+			return Ok(new
+			{
+				Products = productDtos,
+				TotalCount = totalCount,
+				PageNumber = pageNumber,
+				PageSize = pageSize,
+				SearchTerm = searchTerm,
+				BrandId = brandId,           
+				CategoryId = categoryId  
+			});
+		}
 	}
 }
