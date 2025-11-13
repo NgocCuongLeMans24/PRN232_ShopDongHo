@@ -2,15 +2,10 @@
 
 @{
     ViewData["Title"] = "Danh sách sản phẩm";
-    bool canManageProducts = ViewBag.CanManageProducts ?? false;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Danh sách sản phẩm</h2>
-    @if (canManageProducts)
-    {
-        <a asp-action="Create" class="btn btn-primary">+ Thêm sản phẩm</a>
-    }
 </div>
 
 @if (TempData["Success"] != null)

@@ -1,0 +1,103 @@
+@model ClientSide.ViewModels.ProductCreateViewModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa sản phẩm";
+    var brandList = ViewBag.BrandList as List<SelectListItem> ?? new List<SelectListItem>();
+    var categoryList = ViewBag.CategoryList as List<SelectListItem> ?? new List<SelectListItem>();
+}
+
+<h2 class="mb-3">Chỉnh sửa sản phẩm</h2>
+
+<div class="mb-3">
+    <a asp-action="Products" class="btn btn-secondary">&laquo; Quay lại danh sách</a>
+</div>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data" class="row g-3">
+    <input type="hidden" asp-for="Image" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="col-md-6">
+        <label asp-for="ProductCode" class="form-label"></label>
+        <input asp-for="ProductCode" class="form-control" />
+        <span asp-validation-for="ProductCode" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ProductName" class="form-label"></label>
+        <input asp-for="ProductName" class="form-control" />
+        <span asp-validation-for="ProductName" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="BrandId" class="form-label"></label>
+        <select asp-for="BrandId" class="form-select" asp-items="brandList">
+            <option value="">-- Chọn thương hiệu --</option>
+        </select>
+        <span asp-validation-for="BrandId" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="CategoryId" class="form-label"></label>
+        <select asp-for="CategoryId" class="form-select" asp-items="categoryList">
+            <option value="">-- Chọn danh mục --</option>
+        </select>
+        <span asp-validation-for="CategoryId" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ImageFile" class="form-label">Hình ảnh mới (để trống nếu giữ ảnh cũ)</label>
+        <input asp-for="ImageFile" type="file" accept="image/*" class="form-control" id="imageFileInput" />
+        <span asp-validation-for="ImageFile" class="text-danger"></span>
+        <small class="form-text text-muted">Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp), tối đa 5MB</small>
+        @if (!string.IsNullOrEmpty(Model?.Image))
+        {
+            <div class="mt-2">
+                <p>Ảnh hiện tại:</p>
+                <img src="@Model.Image" alt="Current" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" />
+            </div>
+        }
+        <div id="imagePreview" class="mt-2" style="display: none;">
+            <p>Ảnh mới:</p>
+            <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" />
+        </div>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Price" class="form-label"></label>
+        <input asp-for="Price" class="form-control" />
+        <span asp-validation-for="Price" class="text-danger"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="StockQuantity" class="form-label"></label>
+        <input asp-for="StockQuantity" class="form-control" />
+        <span asp-validation-for="StockQuantity" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label"></label>
+        </div>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Cập nhật sản phẩm</button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.getElementById('imageFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('imagePreview').style.display = 'none';
+            }
+        });
+    </script>
+}
+

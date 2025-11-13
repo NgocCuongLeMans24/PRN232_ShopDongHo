@@ -38,7 +38,13 @@ public class UploadController : ControllerBase
 
         try
         {
-            var uploadsFolder = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, "wwwroot", "images", "products");
+            var webRootPath = _environment.WebRootPath;
+            if (string.IsNullOrEmpty(webRootPath))
+            {
+                webRootPath = Path.Combine(_environment.ContentRootPath, "wwwroot");
+            }
+
+            var uploadsFolder = Path.Combine(webRootPath, "images", "products");
             
             // Tạo thư mục nếu chưa tồn tại
             if (!Directory.Exists(uploadsFolder))
