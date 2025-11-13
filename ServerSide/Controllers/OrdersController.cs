@@ -149,7 +149,7 @@ namespace ServerSide.Controllers
             {
                 OrderCode = dto.OrderCode,
                 CustomerId = dto.CustomerId,
-                OrderStatus = dto.OrderStatus = "Đã Xác Nhận",
+                OrderStatus = dto.OrderStatus,
                 PaymentStatus = dto.PaymentStatus,
                 PaymentMethod = dto.PaymentMethod,
                 Note = dto.Note,
