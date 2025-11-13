@@ -1,0 +1,120 @@
+﻿
+@model ClientSide.ViewModels.ProductListViewModel
+@using ClientSide.DataDtos
+@{
+    ViewData["Title"] = "Quản lý Sản phẩm";
+    var brands = ViewBag.Brands as List<BrandDto> ?? new List<BrandDto>();
+    var categories = ViewBag.Categories as List<CategoryDto> ?? new List<CategoryDto>();
+}
+
+<div class="container-fluid pt-4 px-4">
+    <div class="bg-light rounded h-100 p-4">
+        <h1 class="mb-4">Danh sách Sản phẩm</h1>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">@ViewBag.Error</div>
+        }
+
+        <p>
+            <a asp-action="Index" asp-controller="Admin" class="btn btn-secondary">Quay lại Dashboard</a>
+        </p>
+
+        <form asp-action="AdminProducts" method="get" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="searchTerm" class="form-control" placeholder="Tìm theo Tên hoặc Mã..." value="@Model.SearchTerm" />
+                </div>
+
+                <div class="col-md-3">
+                    <select name="brandId" class="form-select" asp-for="BrandId">
+                        <option value="0">Tất cả thương hiệu</option>
+                        @foreach (var brand in brands)
+                        {
+                            <option value="@brand.BrandId">@brand.BrandName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <select name="categoryId" class="form-select" asp-for="CategoryId">
+                        <option value="0">Tất cả danh mục</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.CategoryId">@category.CategoryName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-info w-100">Lọc</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Mã SP</th>
+                        <th scope="col">Tên Sản phẩm</th>
+                        <th scope="col">Thương hiệu</th>
+                        <th scope="col">Danh mục</th>
+                        <th scope="col">Giá</th>
+                        <th scope="col">Tồn kho</th>
+                        <th scope="col">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model.Products)
+                    {
+                        <tr>
+                            <td>@product.ProductCode</td>
+                            <td>@product.ProductName</td>
+                            <td>@product.BrandName</td>
+                            <td>@product.CategoryName</td>
+                            <td>@product.Price.ToString("N0")</td>
+                            <td>@product.StockQuantity</td>
+                            <td>
+                                @if (product.IsActive == true)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactive</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-end">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="AdminProducts"
+                       asp-route-pageNumber="@(Model.PageNumber - 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-brandId="@Model.BrandId"
+                       asp-route-categoryId="@Model.CategoryId">Previous</a>
+                </li>
+                <li class="page-item active" aria-current="page">
+                    <a class="page-link" href="#">@Model.PageNumber / @Model.TotalPages</a>
+                </li>
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="AdminProducts"
+                       asp-route-pageNumber="@(Model.PageNumber + 1)"
+                       asp-route-searchTerm="@Model.SearchTerm"
+                       asp-route-brandId="@Model.BrandId"
+                       asp-route-categoryId="@Model.CategoryId">Next</a>
+                </li>
+            </ul>
+        </nav>
+        <span class="float-end">Tổng số: @Model.TotalCount</span>
+
+    </div>
+</div>
