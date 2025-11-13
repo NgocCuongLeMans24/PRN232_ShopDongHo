@@ -1,0 +1,57 @@
+﻿@model ClientSide.ViewModels.OrderListViewModel
+@{
+    ViewData["Title"] = "Quản lý Đơn hàng";
+}
+
+<div class="container-fluid pt-4 px-4">
+    <div class="bg-light rounded h-100 p-4">
+        <h1 class="mb-4">Danh sách Đơn hàng</h1>
+
+        <form asp-action="AdminOrders" method="get" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="searchTerm" class="form-control" placeholder="Tìm theo Mã ĐH hoặc Tên Khách..." value="@Model.SearchTerm" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-info w-100">Tìm kiếm</button>
+                </div>
+                <div class="col-md-3">
+                    <a asp-action="Index" asp-controller="Admin" class="btn btn-sm btn-info">Quay về trang chủ</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Mã ĐH</th>
+                        <th scope="col">Khách hàng</th>
+                        <th scope="col">SĐT (Khách)</th>
+                        <th scope="col">Ngày đặt</th>
+                        <th scope="col">Trạng thái TT</th>
+                        <th scope="col">Phương thức TT</th>
+                        <th scope="col">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td>@order.OrderCode</td>
+                            <td>@order.CustomerName</td>
+                            <td>@order.CustomerPhoneNumber</td>
+                            <td>@order.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@order.PaymentStatus</td>
+                            <td>@order.PaymentMethod</td>
+                            <td>
+                                <a asp-action="Details" asp-controller="AdminOrder" asp-route-id="@order.OrderId" class="btn btn-sm btn-info">Chi tiết</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
