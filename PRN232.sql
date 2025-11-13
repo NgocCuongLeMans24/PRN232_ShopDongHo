@@ -50,30 +50,6 @@ CREATE TABLE [Users] (
 );
 
 -- =============================================
--- 3️⃣ WebPages & Permissions (phân quyền)
--- =============================================
-CREATE TABLE WebPages (
-    PageID INT PRIMARY KEY IDENTITY(1,1),
-    PageName NVARCHAR(50) NOT NULL,
-    URL NVARCHAR(250) NOT NULL
-);
-
-CREATE TABLE Permissions (
-    PermissionID INT PRIMARY KEY IDENTITY(1,1),
-    RoleID INT NOT NULL,
-    PageID INT NOT NULL,
-    CanAdd BIT DEFAULT 0,
-    CanEdit BIT DEFAULT 0,
-    CanDelete BIT DEFAULT 0,
-    CanView BIT DEFAULT 0,
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    UpdatedAt DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID),
-    FOREIGN KEY (PageID) REFERENCES WebPages(PageID),
-    UNIQUE(RoleID, PageID)
-);
-
--- =============================================
 -- 4️⃣ Brands
 -- =============================================
 CREATE TABLE Brands (

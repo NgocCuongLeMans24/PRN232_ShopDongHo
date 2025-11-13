@@ -151,4 +151,46 @@ public class AuthController : ControllerBase
             user = new { acc.UserId, acc.Username, acc.FullName, acc.Role.RoleName }
         });
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+        if (user == null)
+        {
+            return BadRequest(new { message = "Email không tồn tại trong hệ thống." });
+        }
+
+        // Tạo token reset
+        user.VerificationToken = Guid.NewGuid().ToString();
+        user.VerificationTokenExpire = DateTime.UtcNow.AddHours(1);
+        await _context.SaveChangesAsync();
+
+        var resetLink = $"{_conf["ClientAppUrl"]}/Account/ResetPassword?token={user.VerificationToken}";
+        await _emailService.SendEmailAsync(user.Email,
+            "Đặt lại mật khẩu Clock Shop",
+            $"<p>Xin chào {user.FullName},</p>" +
+            $"<p>Bạn đã yêu cầu đặt lại mật khẩu. Hãy nhấn vào liên kết sau để đặt lại mật khẩu (hiệu lực trong 1 giờ):</p>" +
+            $"<p><a href='{resetLink}'>{resetLink}</a></p>");
+
+        return Ok(new { message = "Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư của bạn!" });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.VerificationToken == model.Token);
+
+        if (user == null || user.VerificationTokenExpire < DateTime.UtcNow)
+        {
+            return BadRequest(new { message = "Mã đặt lại không hợp lệ hoặc đã hết hạn." });
+        }
+
+        user.PasswordHash = model.NewPassword; // 👉 bạn có thể mã hóa nếu có hash
+        user.VerificationToken = null;
+        user.VerificationTokenExpire = null;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Mật khẩu đã được đặt lại thành công! Hãy đăng nhập lại." });
+    }
 }
