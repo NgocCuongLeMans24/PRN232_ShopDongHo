@@ -20,7 +20,6 @@ public class ProductCreateDto
 
     public string? Description { get; set; }
 
-    [Url]
     public string? Image { get; set; }
 
     [Range(0, double.MaxValue, ErrorMessage = "Giá sản phẩm phải lớn hơn hoặc bằng 0")]
