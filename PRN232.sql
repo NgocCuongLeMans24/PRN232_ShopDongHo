@@ -83,11 +83,13 @@ CREATE TABLE Products (
 	Image nvarchar(max),
     Price DECIMAL(18,2) NOT NULL,
     StockQuantity INT NOT NULL DEFAULT 0,
+    SupplierID INT NOT NULL,
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME DEFAULT GETDATE(),
     UpdatedAt DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (BrandID) REFERENCES Brands(BrandID),
-    FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+    FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID),
+    FOREIGN KEY (SupplierID) REFERENCES Users(UserID)
 );
 
 -- Bảng Đơn hàng
@@ -190,8 +192,10 @@ INSERT INTO Users (Username, PasswordHash, Email, FullName, PhoneNumber, Address
 VALUES
 (N'admin', N'adminhash', N'admin@clockshop.vn', N'Nguyễn Văn A', N'0987654321', N'Hà Nội', 1),
 (N'Supplier1', N'staff1hash', N'staff1@clockshop.vn', N'Trần Thị B', N'0912345678', N'Hồ Chí Minh', 2),
-(N'Supplier2', N'customer1hash', N'customer1@gmail.com', N'Lê Văn C', N'0901234567', N'Hà Nội', 3),
-(N'Supplier3', N'customer2hash', N'customer2@gmail.com', N'Phạm Thị D', N'0938765432', N'Đà Nẵng', 3);
+(N'Supplier2', N'staff2hash', N'staff2@clockshop.vn', N'Lê Văn C', N'0901234567', N'Hà Nội', 2),
+(N'Supplier3', N'staff3hash', N'staff3@clockshop.vn', N'Phạm Thị D', N'0938765432', N'Đà Nẵng', 2),
+(N'Customer1', N'cust1hash', N'customer1@gmail.com', N'Ngô Thanh E', N'0988123456', N'Hải Phòng', 3),
+(N'Customer2', N'cust2hash', N'customer2@gmail.com', N'Lý Minh F', N'0909654321', N'Cần Thơ', 3);
 
 -- 3. Brands
 INSERT INTO Brands (BrandName, Country, Description)
@@ -213,21 +217,21 @@ VALUES
 (N'Đồng hồ điện tử', N'Đồng hồ điện tử hiện đại');
 
 -- 5. Products
-INSERT INTO Products (ProductCode, ProductName, BrandID, CategoryID, Description, Price, StockQuantity)
+INSERT INTO Products (ProductCode, ProductName, BrandID, CategoryID, Description, Price, StockQuantity, SupplierID)
 VALUES
-(N'CAS001', N'Casio G-Shock GA-2100', 1, 4, N'Đồng hồ cơ G-Shock siêu bền, mặt vuông', 3500000, 20),
-(N'CAS002', N'Casio Baby-G BA-110', 1, 2, N'Đồng hồ nữ Baby-G chống nước', 2800000, 15),
-(N'SEI001', N'Seiko 5 SNK809', 2, 4, N'Đồng hồ cơ Seiko 5, dây vải', 4200000, 10),
-(N'OR001', N'Orient Bambino Gen 2', 3, 4, N'Đồng hồ cơ Orient, kính cong', 3500000, 8),
-(N'DW001', N'Daniel Wellington Classic Black', 5, 2, N'Đồng hồ thời trang dây da', 3200000, 25),
-(N'CIT001', N'Citizen Eco-Drive BM7100', 4, 4, N'Đồng hồ cơ Eco-Drive, năng lượng ánh sáng', 6000000, 5),
-(N'FOS001', N'Fossil Grant Chronograph', 6, 1, N'Đồng hồ nam phong cách Mỹ, chronograph', 4500000, 12);
+(N'CAS001', N'Casio G-Shock GA-2100', 1, 4, N'Đồng hồ cơ G-Shock siêu bền, mặt vuông', 3500000, 20, 2),
+(N'CAS002', N'Casio Baby-G BA-110', 1, 2, N'Đồng hồ nữ Baby-G chống nước', 2800000, 15, 2),
+(N'SEI001', N'Seiko 5 SNK809', 2, 4, N'Đồng hồ cơ Seiko 5, dây vải', 4200000, 10, 3),
+(N'OR001', N'Orient Bambino Gen 2', 3, 4, N'Đồng hồ cơ Orient, kính cong', 3500000, 8, 3),
+(N'DW001', N'Daniel Wellington Classic Black', 5, 2, N'Đồng hồ thời trang dây da', 3200000, 25, 4),
+(N'CIT001', N'Citizen Eco-Drive BM7100', 4, 4, N'Đồng hồ cơ Eco-Drive, năng lượng ánh sáng', 6000000, 5, 4),
+(N'FOS001', N'Fossil Grant Chronograph', 6, 1, N'Đồng hồ nam phong cách Mỹ, chronograph', 4500000, 12, 4);
 
 -- 6. Orders
 INSERT INTO Orders (OrderCode, CustomerID, OrderStatus, PaymentStatus, PaymentMethod, Note, ProcessedBy)
 VALUES
-(N'ORD001', 3, N'Đã xác nhận', N'Đã thanh toán', N'COD', N'Giao hàng nhanh', 2),
-(N'ORD002', 4, N'Chờ xác nhận', N'Chưa thanh toán', N'Transfer', N'Giao vào buổi chiều', NULL);
+(N'ORD001', 5, N'Đã xác nhận', N'Đã thanh toán', N'COD', N'Giao hàng nhanh', 2),
+(N'ORD002', 6, N'Chờ xác nhận', N'Chưa thanh toán', N'Transfer', N'Giao vào buổi chiều', NULL);
 
 -- 7. OrderDetails
 INSERT INTO OrderDetails (OrderID, ProductID, ProductName, Price, Quantity, TotalPrice)
@@ -245,17 +249,17 @@ VALUES
 -- 9. Reviews
 INSERT INTO Reviews (ProductID, CustomerID, OrderID, Rating, Comment, ApprovedBy)
 VALUES
-(1, 3, 1, 5, N'Đồng hồ rất đẹp và bền', 2),
-(3, 3, 1, 4, N'Đẹp nhưng dây hơi cứng', 2);
+(1, 5, 1, 5, N'Đồng hồ rất đẹp và bền', 2),
+(3, 5, 1, 4, N'Đẹp nhưng dây hơi cứng', 2);
 
 -- 10. Cart
 INSERT INTO Cart (CustomerID, ProductID, Quantity)
 VALUES
-(3, 2, 1),
-(4, 1, 2);
+(5, 2, 1),
+(6, 1, 2);
 
 -- 11. Wishlist
 INSERT INTO Wishlist (CustomerID, ProductID)
 VALUES
-(3, 5),
-(4, 6);
+(5, 5),
+(6, 6);

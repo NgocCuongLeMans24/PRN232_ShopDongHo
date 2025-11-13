@@ -29,6 +29,8 @@ public partial class Product
 
     public DateTime? UpdatedAt { get; set; }
 
+    public int SupplierId { get; set; }
+
     public virtual Brand Brand { get; set; } = null!;
 
     public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
@@ -40,4 +42,6 @@ public partial class Product
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
+
+    public virtual User Supplier { get; set; } = null!;
 }
