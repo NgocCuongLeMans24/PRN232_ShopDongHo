@@ -12,7 +12,7 @@
     <a asp-action="Index" class="btn btn-secondary">&laquo; Quay lại danh sách</a>
 </div>
 
-<form asp-action="Create" method="post" class="row g-3">
+<form asp-action="Create" method="post" enctype="multipart/form-data" class="row g-3">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="col-md-6">
         <label asp-for="ProductCode" class="form-label"></label>
@@ -44,9 +44,13 @@
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
     <div class="col-md-6">
-        <label asp-for="Image" class="form-label"></label>
-        <input asp-for="Image" class="form-control" />
-        <span asp-validation-for="Image" class="text-danger"></span>
+        <label asp-for="ImageFile" class="form-label"></label>
+        <input asp-for="ImageFile" type="file" accept="image/*" class="form-control" id="imageFileInput" />
+        <span asp-validation-for="ImageFile" class="text-danger"></span>
+        <small class="form-text text-muted">Chỉ chấp nhận file ảnh (jpg, jpeg, png, gif, webp), tối đa 5MB</small>
+        <div id="imagePreview" class="mt-2" style="display: none;">
+            <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" />
+        </div>
     </div>
     <div class="col-md-3">
         <label asp-for="Price" class="form-label"></label>
@@ -71,5 +75,20 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.getElementById('imageFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('imagePreview').style.display = 'none';
+            }
+        });
+    </script>
 }
 

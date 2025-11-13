@@ -21,8 +21,9 @@ public class ProductCreateViewModel
     [Display(Name = "Mô tả")]
     public string? Description { get; set; }
 
-    [Display(Name = "Liên kết hình ảnh")]
-    [Url(ErrorMessage = "Đường dẫn hình ảnh không hợp lệ")]
+    [Display(Name = "Hình ảnh sản phẩm")]
+    public IFormFile? ImageFile { get; set; }
+
     public string? Image { get; set; }
 
     [Range(0, double.MaxValue, ErrorMessage = "Giá phải lớn hơn hoặc bằng 0")]

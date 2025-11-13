@@ -94,10 +94,53 @@ public class ProductsController : Controller
             return RedirectToAction("Login", "Account");
         }
 
+        // Upload ảnh nếu có
+        string? imageUrl = null;
+        if (model.ImageFile != null && model.ImageFile.Length > 0)
+        {
+            using var uploadClient = new HttpClient { BaseAddress = new Uri(_urlBase) };
+            uploadClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var formData = new MultipartFormDataContent();
+            using var fileStream = model.ImageFile.OpenReadStream();
+            using var streamContent = new StreamContent(fileStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(model.ImageFile.ContentType);
+            formData.Add(streamContent, "file", model.ImageFile.FileName);
+
+            var uploadResponse = await uploadClient.PostAsync("/api/Upload/image", formData);
+            if (uploadResponse.IsSuccessStatusCode)
+            {
+                var uploadResult = await uploadResponse.Content.ReadAsStringAsync();
+                var uploadData = JsonSerializer.Deserialize<UploadResponse>(uploadResult, _jsonOptions);
+                imageUrl = uploadData?.Url;
+            }
+            else
+            {
+                var errorMsg = await uploadResponse.Content.ReadAsStringAsync();
+                TempData["Error"] = $"Lỗi khi tải ảnh lên: {errorMsg}";
+                await PopulateSelectLists();
+                return View(model);
+            }
+        }
+
+        // Tạo sản phẩm
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var requestPayload = JsonSerializer.Serialize(model);
+        var productData = new
+        {
+            ProductCode = model.ProductCode,
+            ProductName = model.ProductName,
+            BrandId = model.BrandId,
+            CategoryId = model.CategoryId,
+            Description = model.Description,
+            Image = imageUrl,
+            Price = model.Price,
+            StockQuantity = model.StockQuantity,
+            IsActive = model.IsActive
+        };
+
+        var requestPayload = JsonSerializer.Serialize(productData);
         var content = new StringContent(requestPayload, Encoding.UTF8, "application/json");
         var response = await client.PostAsync("/api/Products", content);
 
@@ -111,6 +154,12 @@ public class ProductsController : Controller
         TempData["Error"] = $"Không thể thêm sản phẩm. Chi tiết: {apiError}";
         await PopulateSelectLists();
         return View(model);
+    }
+
+    private class UploadResponse
+    {
+        public string? Url { get; set; }
+        public string? FileName { get; set; }
     }
 
     private UserDto? GetCurrentUser()
