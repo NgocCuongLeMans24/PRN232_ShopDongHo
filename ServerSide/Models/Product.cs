@@ -21,15 +21,15 @@ public partial class Product
 
     public decimal Price { get; set; }
 
-    public int? StockQuantity { get; set; }
+    public int StockQuantity { get; set; }
+
+    public int SupplierId { get; set; }
 
     public bool? IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
-    public int SupplierId { get; set; }
 
     public virtual Brand Brand { get; set; } = null!;
 
@@ -39,7 +39,7 @@ public partial class Product
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
-    public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
-
     public virtual User Supplier { get; set; } = null!;
+
+    public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 }

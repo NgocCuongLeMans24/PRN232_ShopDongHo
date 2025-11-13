@@ -15,5 +15,6 @@
 		public decimal TotalAmount { get; set; }
 		public string? CustomerName { get; set; }
 		public string? CustomerPhoneNumber { get; set; }
+		public List<OrderDetailDto> OrderDetail { get; set; } = new List<OrderDetailDto>();
 	}
 }

@@ -39,60 +39,48 @@
 
         <div class="col-md-5">
             <div class="card p-3">
-
                 <h4>Tổng cộng</h4>
                 <h2 class="text-danger">@Model.TotalAmount.ToString("N0") VND</h2>
                 <hr />
                 <p>Chọn phương thức thanh toán:</p>
 
-                <form asp-action="Checkout" asp-controller="Payment" method="post">
+                <button id="btnVnPay" class="btn btn-primary w-100">
+                    Thanh toán VNPay
+                </button>
 
-                    <input type="hidden" name="orderId" value="@Model.OrderId" />
-                    <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Thanh toán VNPay
-                    </button>
-                </form>
-
+                <a asp-action="PlaceOrderCOD" asp-controller="Cart" class="btn btn-secondary w-100 mt-2">
+                    Thanh toán khi nhận hàng (COD)
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function() {
 
-            // Lấy nút bấm bằng ID
             var btnVnPay = document.getElementById("btnVnPay");
 
             if (btnVnPay) {
                 btnVnPay.onclick = function(e) {
-                    e.preventDefault(); // Ngăn submit (nếu lỡ đặt trong form)
+                    e.preventDefault();
 
-                    // Lấy dữ liệu từ Model (được render ra từ C#)
+                    // Lấy dữ liệu từ Model
                     var orderId = @Model.OrderId;
                     var totalAmount = @Model.TotalAmount;
 
-                    // 3. Dùng JS (Fetch) gọi về PaymentController (ClientSide)
+                    // Gọi action "Checkout" trong "PaymentController"
                     fetch('/Payment/Checkout', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                         },
-                        // Gửi dữ liệu đi
                         body: 'orderId=' + orderId + '&totalAmount=' + totalAmount
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                             throw new Error('Network response was not ok ' + response.statusText);
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
-                        // 4. Nhận URL từ JSON (Bước 1) và điều hướng trình duyệt
+                        // Nhận URL từ JSON và điều hướng
                         if (data.paymentUrl) {
                             window.location.href = data.paymentUrl;
                         } else {
@@ -100,7 +88,7 @@
                         }
                     })
                     .catch(error => {
-                        console.error("Lỗi khi gọi Checkout:", error);
+                        console.error("Lỗi khi gọi /Payment/Checkout:", error);
                         alert("Đã xảy ra lỗi. Vui lòng thử lại.");
                     });
                 };

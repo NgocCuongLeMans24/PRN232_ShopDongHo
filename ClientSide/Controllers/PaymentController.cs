@@ -2,7 +2,7 @@
 using ClientSide.Utils; // Giả sử MyTools ở đây
 using Microsoft.AspNetCore.Http; // Để lấy IP
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration; // Để đọc appsettings
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -17,7 +17,7 @@ namespace ClientSide.Controllers
 		private readonly IConfiguration _config;
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IHttpContextAccessor _httpContextAccessor;
-		private readonly string _urlBase = MyTools.getUrl(); // URL API ServerSide
+		private readonly string _urlBase = MyTools.getUrl();
 
 		public PaymentController(IConfiguration config, IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor)
 		{
@@ -29,7 +29,7 @@ namespace ClientSide.Controllers
 		// --- HÀM TẠO URL THANH TOÁN ---
 		// (Bạn sẽ gọi hàm này từ trang Checkout, giả sử bạn đã có orderId và totalAmount)
 		[HttpPost]
-		public IActionResult CreatePaymentUrl(int orderId, decimal totalAmount)
+		public IActionResult Checkout(int orderId, decimal totalAmount)
 		{
 
 			string vnp_ReturnUrl = _config.GetValue<string>("VnPay:PaymentBackReturnUrl");
@@ -54,7 +54,6 @@ namespace ClientSide.Controllers
 
 			string paymentUrl = pay.CreateRequestUrl(vnp_Url, vnp_HashSecret);
 
-			// Chuyển hướng người dùng đến trang VNPay
 			return Redirect(paymentUrl);
 		}
 
@@ -73,7 +72,7 @@ namespace ClientSide.Controllers
 				}
 			}
 
-			int orderId = Convert.ToInt32(pay.GetResponseData("vnp_TxnRef")); // Mã đơn hàng
+			int orderId = Convert.ToInt32(pay.GetResponseData("vnp_TxnRef"));
 			string vnp_ResponseCode = pay.GetResponseData("vnp_ResponseCode");
 			string vnp_SecureHash = pay.GetResponseData("vnp_SecureHash");
 			string vnp_HashSecret = _config.GetValue<string>("VnPay:HashSecret");
@@ -90,13 +89,13 @@ namespace ClientSide.Controllers
 
 					// Gọi API (ServerSide) để cập nhật trạng thái đơn hàng
 					// (Bạn có thể đổi "Processing", "Paid" thành trạng thái bạn muốn)
-					await UpdateOrderStatusApi(orderId, "Processing", "Paid");
+					await UpdateOrderStatusApi(orderId, "Đã xác nhận", "Đã thanh toán");
 				}
 				else
 				{
 					// Thanh toán thất bại
 					ViewBag.Message = $"Giao dịch thất bại. Mã lỗi: {vnp_ResponseCode}";
-					await UpdateOrderStatusApi(orderId, "Pending", "Failed");
+					await UpdateOrderStatusApi(orderId, "Chờ xác nhận", "Chưa thanh toán");
 				}
 			}
 			else
@@ -105,7 +104,7 @@ namespace ClientSide.Controllers
 			}
 
 			// Trả về View thông báo kết quả
-			return View("PaymentResult");
+			return View();
 		}
 
 		// Hàm hỗ trợ gọi API ServerSide

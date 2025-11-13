@@ -4,20 +4,6 @@
     ViewData["Title"] = "Đơn hàng của tôi";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Đơn hàng của tôi</h2>
-    <a asp-action="History" class="btn btn-info">📋 Lịch sử mua hàng</a>
-</div>
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-
 @if (Model == null || !Model.Any())
 {
     <div class="alert alert-info">Hiện tại bạn chưa có đơn hàng nào.</div>
@@ -34,6 +20,7 @@ else
                 <th>Trạng thái thanh toán</th>
                 <th>Tổng tiền</th>
                 <th>Chi tiết</th>
+                <th>Thanh toán</th>
             </tr>
         </thead>
         <tbody>
@@ -53,33 +40,25 @@ else
                             Xem
                         </button>
                     </td>
-                </tr>
-                <tr class="collapse" id="details-@order.OrderId">
-                    <td colspan="7">
-                        <table class="table table-sm table-bordered mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Sản phẩm</th>
-                                    <th>Đơn giá</th>
-                                    <th>Số lượng</th>
-                                    <th>Thành tiền</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @{
-                                    var details = order.OrderDetails ?? new List<ClientSide.Models.OrderDetail>();
-                                }
-                                @foreach (var detail in details)
-                                {
-                                    <tr>
-                                        <td>@detail.ProductName</td>
-                                        <td>@string.Format("{0:N0} VNĐ", detail.Price)</td>
-                                        <td>@detail.Quantity</td>
-                                        <td>@string.Format("{0:N0} VNĐ", detail.TotalPrice)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+
+                    <td>
+
+                        @if (order.PaymentStatus != "Đã thanh toán")
+                        {
+                            <form asp-action="Checkout" asp-controller="Payment" method="post">
+
+                                <input type="hidden" name="orderId" value="@order.OrderId" />
+                                <input type="hidden" name="totalAmount" value="@orderTotal" />
+
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    Thanh toán VNPay
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Đã thanh toán</span>
+                        }
                     </td>
                 </tr>
             }
