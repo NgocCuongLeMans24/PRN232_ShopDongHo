@@ -156,11 +156,31 @@ namespace ServerSide.Controllers
             }
 
             // Create new review
+            // Get OrderId from purchase history if not provided
+            int orderId = dto.OrderId ?? 0;
+            if (orderId == 0)
+            {
+                // Try to find the order ID from the user's purchase history
+                var orderDetail = await _context.OrderDetails
+                    .Include(od => od.Order)
+                    .FirstOrDefaultAsync(od => od.ProductId == dto.ProductId 
+                        && od.Order != null 
+                        && od.Order.CustomerId == user.UserId
+                        && od.Order.OrderStatus != null
+                        && (od.Order.OrderStatus.Contains("Xác Nhận") || 
+                            od.Order.OrderStatus.Contains("xác nhận")));
+                
+                if (orderDetail != null && orderDetail.Order != null)
+                {
+                    orderId = orderDetail.Order.OrderId;
+                }
+            }
+
             var review = new Review
             {
                 ProductId = dto.ProductId,
                 CustomerId = user.UserId,
-                OrderId = dto.OrderId,
+                OrderId = orderId,
                 Rating = dto.Rating,
                 Comment = dto.Comment,
                 CreatedAt = DateTime.Now,
