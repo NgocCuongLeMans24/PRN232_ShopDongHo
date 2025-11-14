@@ -2,8 +2,9 @@
 using ClientSide.Models;
 using ClientSide.Utils;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 using System.Net.Http.Headers;
-using System.Runtime.Intrinsics.Arm;
 using System.Text.Json;
 
 namespace ClientSide.Controllers;
@@ -86,7 +87,12 @@ public class ProductsController : Controller
         }
 
         // Lấy thông tin user hiện tại
-        HttpResponseMessage resUser = await client.GetAsync($"{_urlBase}/api/Auth/current-user");
+        string? token = HttpContext.Session.GetString("JwtToken");
+
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        HttpResponseMessage resUser = await client.GetAsync(_urlBase + "/api/Auth/current-user");
         if (!resUser.IsSuccessStatusCode)
         {
             TempData["Error"] = "Không thể lấy thông tin người dùng!";
@@ -111,7 +117,6 @@ public class ProductsController : Controller
 
         if (currentUser != null)
         {
-            string? token = HttpContext.Session.GetString("JwtToken");
             if (!string.IsNullOrEmpty(token))
             {
                 using var authClient = new HttpClient { BaseAddress = new Uri(_urlBase) };
@@ -199,8 +204,21 @@ public class ProductsController : Controller
         return View(product);
     }
 
-    private object GetCurrentUser()
+    private UserDto? GetCurrentUser()
     {
-        throw new NotImplementedException();
+        try
+        {
+            var userJson = HttpContext.Session.GetString("UserInfo");
+            if (string.IsNullOrEmpty(userJson))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<UserDto>(userJson, _jsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
