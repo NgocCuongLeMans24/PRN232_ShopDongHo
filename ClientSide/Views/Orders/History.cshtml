@@ -1,7 +1,9 @@
 @model IList<ClientSide.DataDtos.PurchaseHistoryItemDto>
+@using System.Collections.Generic
 
 @{
     ViewData["Title"] = "Lịch sử mua hàng";
+    var reviewStatuses = ViewBag.ReviewStatuses as Dictionary<int, ClientSide.DataDtos.ReviewStatusDto> ?? new Dictionary<int, ClientSide.DataDtos.ReviewStatusDto>();
 }
 
 <h2 class="mb-3">Lịch sử mua hàng</h2>
@@ -32,20 +34,58 @@ else
                 <th>Thành tiền</th>
                 <th>Trạng thái đơn</th>
                 <th>Thanh toán</th>
+                <th>Đánh giá</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model)
             {
+                var reviewStatus = reviewStatuses.ContainsKey(item.ProductId) ? reviewStatuses[item.ProductId] : null;
+                var canReview = !string.IsNullOrEmpty(item.OrderStatus) && 
+                               (item.OrderStatus.Contains("Xác Nhận") || item.OrderStatus.Contains("xác nhận"));
+                
                 <tr>
                     <td>@item.OrderCode</td>
                     <td>@item.OrderDate?.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@item.ProductName</td>
+                    <td>
+                        <a asp-controller="Products" asp-action="ProductDetail" asp-route-id="@item.ProductId" 
+                           class="text-decoration-none">
+                            @item.ProductName
+                        </a>
+                    </td>
                     <td>@item.Quantity</td>
                     <td>@string.Format("{0:N0} VNĐ", item.Price)</td>
                     <td>@string.Format("{0:N0} VNĐ", item.TotalPrice)</td>
                     <td>@item.OrderStatus</td>
                     <td>@item.PaymentStatus</td>
+                    <td>
+                        @if (canReview)
+                        {
+                            @if (reviewStatus != null && reviewStatus.HasReviewed)
+                            {
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-warning">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <span>@(i <= reviewStatus.Rating ? "★" : "☆")</span>
+                                        }
+                                    </span>
+                                    <small class="text-muted">Đã đánh giá</small>
+                                </div>
+                            }
+                            else
+                            {
+                                <a asp-controller="Products" asp-action="ProductDetail" asp-route-id="@item.ProductId" 
+                                   class="btn btn-sm btn-primary">
+                                    ⭐ Đánh giá
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <small class="text-muted">-</small>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>

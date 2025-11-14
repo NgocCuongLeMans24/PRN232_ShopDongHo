@@ -1,0 +1,517 @@
+@model ClientSide.ViewModels.AnalyticsViewModel
+@{
+    ViewData["Title"] = "Sales Analytics Dashboard";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+    :root {
+        --analytics-bg: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+        --analytics-card-bg: #ffffff;
+        --analytics-text: #333;
+        --analytics-text-light: #666;
+        --analytics-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --analytics-radius: 12px;
+    }
+
+    body {
+        background-color: #f5f7fa;
+    }
+
+    .analytics-container {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        padding: 20px;
+    }
+
+    .analytics-header {
+        background: var(--analytics-bg);
+        color: white;
+        padding: 24px;
+        border-radius: var(--analytics-radius);
+        margin-bottom: 24px;
+        box-shadow: var(--analytics-shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .analytics-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .kpi-card {
+        background: var(--analytics-card-bg);
+        border-radius: var(--analytics-radius);
+        padding: 24px;
+        box-shadow: var(--analytics-shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .kpi-info h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--analytics-text-light);
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .kpi-info .value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--analytics-text);
+    }
+
+    .kpi-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .chart-card {
+        background: var(--analytics-card-bg);
+        border-radius: var(--analytics-radius);
+        padding: 24px;
+        box-shadow: var(--analytics-shadow);
+    }
+
+    .chart-card h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: var(--analytics-text);
+        font-weight: 600;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .period-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .period-btn {
+        padding: 8px 16px;
+        border: 2px solid #667eea;
+        background: white;
+        color: #667eea;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .period-btn.active {
+        background: #667eea;
+        color: white;
+    }
+
+    .period-btn:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .top-products-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .top-product-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .top-product-item:last-child {
+        border-bottom: none;
+    }
+
+    .product-name {
+        font-weight: 600;
+        color: var(--analytics-text);
+    }
+
+    .product-stats {
+        text-align: right;
+        font-size: 0.9rem;
+        color: var(--analytics-text-light);
+    }
+
+    .product-revenue {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+</style>
+
+<div class="analytics-container">
+    <div class="analytics-header">
+        <div>
+            <h1>📊 Sales Analytics Dashboard</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">Detailed sales analytics and insights</p>
+        </div>
+        <div>
+            <form asp-controller="SeedData" asp-action="CreateSampleOrders" method="post" class="d-inline">
+                <button type="submit" class="btn btn-warning btn-sm me-2" 
+                        onclick="return confirm('Bạn có chắc muốn tạo sample orders? Điều này sẽ tạo nhiều đơn hàng mẫu để test biểu đồ.');">
+                    🧪 Tạo Sample Data
+                </button>
+            </form>
+            <a asp-action="Index" asp-controller="Admin" class="btn btn-light">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">@ViewBag.Error</div>
+    }
+
+    @if ((Model.SalesTrend == null || !Model.SalesTrend.Any()) && 
+         (Model.SalesByCategory == null || !Model.SalesByCategory.Any()))
+    {
+        <div class="alert alert-info">
+            <strong>💡 Tip:</strong> Chưa có dữ liệu để hiển thị biểu đồ. 
+            Hãy click nút <strong>"🧪 Tạo Sample Data"</strong> ở trên để tạo đơn hàng mẫu, 
+            hoặc tạo đơn hàng thật từ hệ thống.
+        </div>
+    }
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-info">
+                <h3>Total Sales</h3>
+                <div class="value">@Model.Stats.TotalSales.ToString("N0") VNĐ</div>
+            </div>
+            <div class="kpi-icon">💰</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-info">
+                <h3>Monthly Sales</h3>
+                <div class="value">@Model.Stats.MonthlySales.ToString("N0") VNĐ</div>
+            </div>
+            <div class="kpi-icon">📅</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-info">
+                <h3>Total Orders</h3>
+                <div class="value">@Model.Stats.TotalOrders</div>
+            </div>
+            <div class="kpi-icon">🛒</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-info">
+                <h3>Avg Order Value</h3>
+                <div class="value">@Model.Stats.AverageOrderValue.ToString("N0") VNĐ</div>
+            </div>
+            <div class="kpi-icon">📈</div>
+        </div>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="period-selector">
+        <a asp-action="Index" asp-route-period="daily" asp-route-year="@Model.Year" 
+           class="period-btn @(Model.Period == "daily" ? "active" : "")">Daily</a>
+        <a asp-action="Index" asp-route-period="weekly" asp-route-year="@Model.Year" 
+           class="period-btn @(Model.Period == "weekly" ? "active" : "")">Weekly</a>
+        <a asp-action="Index" asp-route-period="monthly" asp-route-year="@Model.Year" 
+           class="period-btn @(Model.Period == "monthly" ? "active" : "")">Monthly</a>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="chart-grid">
+        <!-- Sales Trend Chart -->
+        <div class="chart-card">
+            <h3>Sales Trend</h3>
+            <div class="chart-container">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Sales by Category Chart -->
+        <div class="chart-card">
+            <h3>Sales by Category</h3>
+            <div class="chart-container">
+                <canvas id="salesByCategoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Monthly Sales Chart -->
+        <div class="chart-card">
+            <h3>Monthly Sales - @Model.Year</h3>
+            <div class="chart-container">
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Orders by Status Chart -->
+        <div class="chart-card">
+            <h3>Orders by Status</h3>
+            <div class="chart-container">
+                <canvas id="ordersByStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="chart-card">
+        <h3>Top Selling Products</h3>
+        <ul class="top-products-list">
+            @foreach (var product in Model.TopProducts)
+            {
+                <li class="top-product-item">
+                    <div>
+                        <div class="product-name">@product.ProductName</div>
+                        <div class="product-stats">@product.QuantitySold sold</div>
+                    </div>
+                    <div class="product-revenue">@product.TotalRevenue.ToString("N0") VNĐ</div>
+                </li>
+            }
+            @if (!Model.TopProducts.Any())
+            {
+                <li class="top-product-item">
+                    <div class="product-stats">No products sold yet</div>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+@section Scripts {
+    @using System.Text.Json
+    @using System.Text.Json.Serialization
+    <script>
+        // Sales Trend Chart
+        const salesTrendCtx = document.getElementById('salesTrendChart');
+        if (salesTrendCtx) {
+            @{
+                var trendData = Model.SalesTrend.Select(x => new { 
+                    label = !string.IsNullOrEmpty(x.Date) ? x.Date : x.Period, 
+                    sales = x.Sales 
+                }).ToList();
+                var trendJson = System.Text.Json.JsonSerializer.Serialize(trendData);
+            }
+            const salesTrendData = @Html.Raw(trendJson);
+            
+            if (salesTrendData && salesTrendData.length > 0) {
+                new Chart(salesTrendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: salesTrendData.map(x => x.label),
+                        datasets: [{
+                            label: 'Sales (VNĐ)',
+                            data: salesTrendData.map(x => x.sales),
+                            borderColor: 'rgb(102, 126, 234)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString('vi-VN') + ' VNĐ';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                salesTrendCtx.parentElement.innerHTML = '<p class="text-muted text-center p-4">Chưa có dữ liệu</p>';
+            }
+        }
+
+        // Sales by Category Chart
+        const categoryCtx = document.getElementById('salesByCategoryChart');
+        if (categoryCtx) {
+            @{
+                var categoryDataList = Model.SalesByCategory.Select(x => new { 
+                    category = x.Category, 
+                    sales = x.Sales 
+                }).ToList();
+                var categoryJson = System.Text.Json.JsonSerializer.Serialize(categoryDataList);
+            }
+            const categoryData = @Html.Raw(categoryJson);
+            
+            if (categoryData && categoryData.length > 0) {
+                new Chart(categoryCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: categoryData.map(x => x.category),
+                        datasets: [{
+                            data: categoryData.map(x => x.sales),
+                            backgroundColor: [
+                                'rgb(102, 126, 234)',
+                                'rgb(118, 75, 162)',
+                                'rgb(255, 99, 132)',
+                                'rgb(54, 162, 235)',
+                                'rgb(255, 206, 86)',
+                                'rgb(75, 192, 192)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.parsed.toLocaleString('vi-VN') + ' VNĐ';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                categoryCtx.parentElement.innerHTML = '<p class="text-muted text-center p-4">Chưa có dữ liệu</p>';
+            }
+        }
+
+        // Monthly Sales Chart
+        const monthlyCtx = document.getElementById('monthlySalesChart');
+        if (monthlyCtx) {
+            @{
+                var monthlyDataList = Model.MonthlySales.Select(x => new { 
+                    monthName = x.MonthName, 
+                    sales = x.Sales 
+                }).ToList();
+                var monthlyJson = System.Text.Json.JsonSerializer.Serialize(monthlyDataList);
+            }
+            const monthlyData = @Html.Raw(monthlyJson);
+            
+            if (monthlyData && monthlyData.length > 0) {
+                new Chart(monthlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyData.map(x => x.monthName),
+                        datasets: [{
+                            label: 'Sales (VNĐ)',
+                            data: monthlyData.map(x => x.sales),
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgb(102, 126, 234)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString('vi-VN') + ' VNĐ';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                monthlyCtx.parentElement.innerHTML = '<p class="text-muted text-center p-4">Chưa có dữ liệu</p>';
+            }
+        }
+
+        // Orders by Status Chart
+        const statusCtx = document.getElementById('ordersByStatusChart');
+        if (statusCtx) {
+            @{
+                var statusDataList = Model.OrdersByStatus.Select(x => new { 
+                    status = x.Status, 
+                    count = x.Count 
+                }).ToList();
+                var statusJson = System.Text.Json.JsonSerializer.Serialize(statusDataList);
+            }
+            const statusData = @Html.Raw(statusJson);
+            
+            if (statusData && statusData.length > 0) {
+                new Chart(statusCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: statusData.map(x => x.status),
+                        datasets: [{
+                            data: statusData.map(x => x.count),
+                            backgroundColor: [
+                                'rgb(102, 126, 234)',
+                                'rgb(118, 75, 162)',
+                                'rgb(255, 99, 132)',
+                                'rgb(54, 162, 235)',
+                                'rgb(255, 206, 86)',
+                                'rgb(75, 192, 192)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            } else {
+                statusCtx.parentElement.innerHTML = '<p class="text-muted text-center p-4">Chưa có dữ liệu</p>';
+            }
+        }
+    </script>
+}
+

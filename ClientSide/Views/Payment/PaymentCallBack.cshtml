@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Kết quả thanh toán";
+}
+
+<div class="container text-center" style="padding: 50px;">
+
+    @if (ViewBag.Message != null && ViewBag.Message.Contains("thành công"))
+    {
+        <h1 class="text-success">@ViewBag.Message</h1>
+        <p>Cảm ơn bạn đã mua hàng!</p>
+    }
+    else
+    {
+        <h1 class="text-danger">@ViewBag.Message</h1>
+        <p>Đã có lỗi xảy ra. Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
+    }
+
+    <a asp-action="Index" asp-controller="Products" class="btn btn-primary">Quay về trang chủ</a>
+</div>

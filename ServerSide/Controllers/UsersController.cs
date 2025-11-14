@@ -14,7 +14,7 @@ namespace ServerSide.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	[Authorize(Roles = "Admin")] // <-- 2. Thêm attribute này để bảo vệ toàn bộ controller
+	[Authorize(Roles = "Admin")]
 	public class UsersController : ControllerBase
 	{
 		private readonly Prn232ClockShopContext _context;

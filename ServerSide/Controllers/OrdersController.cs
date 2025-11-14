@@ -149,7 +149,7 @@ namespace ServerSide.Controllers
             {
                 OrderCode = dto.OrderCode,
                 CustomerId = dto.CustomerId,
-                OrderStatus = dto.OrderStatus = "Đã Xác Nhận",
+                OrderStatus = dto.OrderStatus,
                 PaymentStatus = dto.PaymentStatus,
                 PaymentMethod = dto.PaymentMethod,
                 Note = dto.Note,
@@ -191,5 +191,22 @@ namespace ServerSide.Controllers
         {
             return _context.Orders.Any(e => e.OrderId == id);
         }
-    }
+
+		[HttpPut("{id}/UpdatePaymentStatus")]
+		public async Task<IActionResult> UpdatePaymentStatus(int id, [FromBody] UpdatePaymentStatusDto dto)
+		{
+			var order = await _context.Orders.FindAsync(id);
+			if (order == null)
+			{
+				return NotFound();
+			}
+
+			order.OrderStatus = dto.OrderStatus;
+			order.PaymentStatus = dto.PaymentStatus;
+			order.UpdatedAt = DateTime.UtcNow;
+
+			await _context.SaveChangesAsync();
+			return NoContent();
+		}
+	}
 }
