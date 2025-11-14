@@ -43,3 +43,161 @@
         <a asp-controller="Products" asp-action="Index" class="btn btn-secondary mt-3">Quay lại danh sách</a>
     </div>
 </div>
+
+<!-- Reviews Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="mb-4">Đánh giá sản phẩm</h3>
+        
+        @{
+            var reviewsData = ViewBag.Reviews as ProductReviewsDto;
+        }
+
+        @if (reviewsData != null && reviewsData.TotalReviews > 0)
+        {
+            <div class="mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div>
+                        <h2 class="mb-0">@reviewsData.AverageRating.ToString("F1")</h2>
+                        <div class="text-warning">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <span>@(i <= Math.Round(reviewsData.AverageRating) ? "★" : "☆")</span>
+                            }
+                        </div>
+                        <small class="text-muted">(@reviewsData.TotalReviews đánh giá)</small>
+                    </div>
+                </div>
+
+                <!-- Rating Distribution -->
+                <div class="mb-4">
+                    @foreach (var dist in reviewsData.RatingDistribution.OrderByDescending(d => d.Rating))
+                    {
+                        var percentage = reviewsData.TotalReviews > 0 
+                            ? (dist.Count * 100.0 / reviewsData.TotalReviews) 
+                            : 0;
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <small>@dist.Rating sao</small>
+                            <div class="progress flex-grow-1" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: @percentage%" 
+                                     aria-valuenow="@percentage" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted">@dist.Count</small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Reviews List -->
+            <div class="reviews-list">
+                @foreach (var review in reviewsData.Reviews)
+                {
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong>@review.CustomerName</strong>
+                                    <div class="text-warning">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <span>@(i <= review.Rating ? "★" : "☆")</span>
+                                        }
+                                    </div>
+                                </div>
+                                <small class="text-muted">@review.CreatedAt?.ToString("dd/MM/yyyy")</small>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(review.Comment))
+                            {
+                                <p class="mb-0">@review.Comment</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>
+        }
+
+        <!-- Add Review Form -->
+        @if (ViewBag.IsLoggedIn == true && ViewBag.CanReview == true)
+        {
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Viết đánh giá của bạn</h5>
+                </div>
+                <div class="card-body">
+                    <form id="reviewForm" asp-controller="Reviews" asp-action="Create" method="post">
+                        <input type="hidden" name="ProductId" value="@Model.ProductId" />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Đánh giá (sao)</label>
+                            <div class="rating-input">
+                                @for (int i = 5; i >= 1; i--)
+                                {
+                                    <input type="radio" name="Rating" value="@i" id="rating@i" required />
+                                    <label for="rating@i" class="star-label">★</label>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Comment" class="form-label">Nhận xét (tùy chọn)</label>
+                            <textarea class="form-control" name="Comment" id="Comment" rows="4" 
+                                      placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+                    </form>
+                </div>
+            </div>
+        }
+        else if (ViewBag.IsLoggedIn == true && ViewBag.CanReview == false)
+        {
+            <div class="alert alert-info mt-4">
+                <strong>💡 Lưu ý:</strong> Bạn cần mua sản phẩm này để có thể đánh giá. 
+                <a asp-controller="Products" asp-action="Index" class="alert-link">Xem danh sách sản phẩm</a> để mua hàng.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning mt-4">
+                Vui lòng <a asp-controller="Account" asp-action="Login">đăng nhập</a> để đánh giá sản phẩm.
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .rating-input {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: 5px;
+    }
+
+    .rating-input input[type="radio"] {
+        display: none;
+    }
+
+    .rating-input .star-label {
+        font-size: 2rem;
+        color: #ddd;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .rating-input input[type="radio"]:checked ~ .star-label,
+    .rating-input .star-label:hover,
+    .rating-input .star-label:hover ~ .star-label {
+        color: #ffc107;
+    }
+
+    .rating-input input[type="radio"]:checked ~ .star-label {
+        color: #ffc107;
+    }
+</style>

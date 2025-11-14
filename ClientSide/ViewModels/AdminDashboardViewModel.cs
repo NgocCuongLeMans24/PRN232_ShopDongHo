@@ -1,5 +1,4 @@
 ﻿using ClientSide.DataDtos;
-using ClientSide.DataDtos; 
 using System.Collections.Generic;
 
 namespace ClientSide.ViewModels
