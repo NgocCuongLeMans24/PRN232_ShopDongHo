@@ -2,6 +2,9 @@
 using ClientSide.Models;
 using ClientSide.Utils;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace ClientSide.Controllers;
@@ -176,5 +179,23 @@ public class ProductsController : Controller
         }
 
         return View(product);
+    }
+
+    private UserDto? GetCurrentUser()
+    {
+        try
+        {
+            var userJson = HttpContext.Session.GetString("UserInfo");
+            if (string.IsNullOrEmpty(userJson))
+            {
+                return null;
+            }
+
+            return JsonSerializer.Deserialize<UserDto>(userJson, _jsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
