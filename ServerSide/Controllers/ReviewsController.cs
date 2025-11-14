@@ -56,6 +56,46 @@ namespace ServerSide.Controllers
             });
         }
 
+        // GET: api/Reviews/CheckReviewStatus?customerId=X&productIds=1,2,3
+        [HttpGet("CheckReviewStatus")]
+        [Authorize]
+        public async Task<IActionResult> CheckReviewStatus([FromQuery] int customerId, [FromQuery] string productIds)
+        {
+            if (string.IsNullOrEmpty(productIds))
+            {
+                return Ok(new List<object>());
+            }
+
+            var productIdList = productIds.Split(',')
+                .Select(id => int.TryParse(id.Trim(), out var pid) ? pid : 0)
+                .Where(id => id > 0)
+                .ToList();
+
+            if (!productIdList.Any())
+            {
+                return Ok(new List<object>());
+            }
+
+            var reviews = await _context.Reviews
+                .Where(r => r.CustomerId == customerId && productIdList.Contains(r.ProductId))
+                .Select(r => new
+                {
+                    r.ProductId,
+                    r.Rating,
+                    HasReviewed = true
+                })
+                .ToListAsync();
+
+            var result = productIdList.Select(pid => new
+            {
+                ProductId = pid,
+                HasReviewed = reviews.Any(r => r.ProductId == pid),
+                Rating = reviews.FirstOrDefault(r => r.ProductId == pid)?.Rating ?? 0
+            }).ToList();
+
+            return Ok(result);
+        }
+
         // POST: api/Reviews/Create
         [HttpPost("Create")]
         [Authorize]
@@ -82,12 +122,17 @@ namespace ServerSide.Controllers
             }
 
             // Check if user has purchased this product (via OrderDetails)
+            // Accept multiple order statuses
             var hasPurchased = await _context.OrderDetails
                 .Include(od => od.Order)
                 .AnyAsync(od => od.ProductId == dto.ProductId 
                     && od.Order != null 
                     && od.Order.CustomerId == user.UserId
-                    && od.Order.OrderStatus == "Đã Xác Nhận");
+                    && od.Order.OrderStatus != null
+                    && (od.Order.OrderStatus.Contains("Xác Nhận") || 
+                        od.Order.OrderStatus.Contains("xác nhận") ||
+                        od.Order.OrderStatus == "Đã Xác Nhận" ||
+                        od.Order.OrderStatus == "Chờ xác nhận"));
 
             if (!hasPurchased)
             {
@@ -208,4 +253,3 @@ namespace ServerSide.Controllers
         public string? Comment { get; set; }
     }
 }
-

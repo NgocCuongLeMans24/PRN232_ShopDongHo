@@ -117,6 +117,31 @@ namespace ClientSide.Controllers
                 PropertyNameCaseInsensitive = true
             }) ?? new List<PurchaseHistoryItemDto>();
 
+            // Get review status for all products in history
+            if (history.Any() && customerId > 0)
+            {
+                try
+                {
+                    var productIds = string.Join(",", history.Select(h => h.ProductId).Distinct());
+                    var reviewStatusRes = await client.GetAsync($"{urlBase}/api/Reviews/CheckReviewStatus?customerId={customerId}&productIds={productIds}");
+                    if (reviewStatusRes.IsSuccessStatusCode)
+                    {
+                        var reviewStatusJson = await reviewStatusRes.Content.ReadAsStringAsync();
+                        var reviewStatuses = JsonSerializer.Deserialize<List<ReviewStatusDto>>(reviewStatusJson, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        }) ?? new List<ReviewStatusDto>();
+
+                        ViewBag.ReviewStatuses = reviewStatuses.ToDictionary(r => r.ProductId, r => r);
+                    }
+                }
+                catch
+                {
+                    // If review check fails, continue without review status
+                    ViewBag.ReviewStatuses = new Dictionary<int, ReviewStatusDto>();
+                }
+            }
+
             return View(history);
         }
 

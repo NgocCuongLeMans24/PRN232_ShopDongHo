@@ -40,7 +40,8 @@ namespace ServerSide
                         .AllowCredentials()); // nếu muốn gửi cookie / auth
             });
 
-            var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+            var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
+            var key = Encoding.ASCII.GetBytes(jwtKey);
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).
                 AddJwtBearer(opt =>
                 {

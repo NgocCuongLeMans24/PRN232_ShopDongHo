@@ -124,7 +124,7 @@
         }
 
         <!-- Add Review Form -->
-        @if (ViewBag.CanReview == true)
+        @if (ViewBag.IsLoggedIn == true && ViewBag.CanReview == true)
         {
             <div class="card mt-4">
                 <div class="card-header">
@@ -156,10 +156,11 @@
                 </div>
             </div>
         }
-        else if (ViewBag.CanReview == false)
+        else if (ViewBag.IsLoggedIn == true && ViewBag.CanReview == false)
         {
             <div class="alert alert-info mt-4">
-                Bạn cần mua sản phẩm này để có thể đánh giá.
+                <strong>💡 Lưu ý:</strong> Bạn cần mua sản phẩm này để có thể đánh giá. 
+                <a asp-controller="Products" asp-action="Index" class="alert-link">Xem danh sách sản phẩm</a> để mua hàng.
             </div>
         }
         else

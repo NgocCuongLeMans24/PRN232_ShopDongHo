@@ -280,6 +280,12 @@
             <h3>Reviews Management</h3>
             <div class="actions">
                 <a asp-action="Index" asp-controller="AdminReviews" class="dash-btn btn-secondary">View Pending Reviews</a>
+                <form asp-controller="SeedReviews" asp-action="CreateSampleReviews" method="post" class="d-inline mt-2">
+                    <button type="submit" class="dash-btn btn-secondary" 
+                            onclick="return confirm('Tạo đánh giá mẫu cho các sản phẩm?');">
+                        🧪 Tạo Sample Reviews
+                    </button>
+                </form>
             </div>
         </div>
     </div>
