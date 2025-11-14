@@ -2,6 +2,8 @@
 using ClientSide.Models;
 using ClientSide.Utils;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Headers;
+using System.Runtime.Intrinsics.Arm;
 using System.Text.Json;
 
 namespace ClientSide.Controllers;
@@ -83,11 +85,30 @@ public class ProductsController : Controller
             ViewBag.Reviews = null;
         }
 
-        // Check if current user can review (has purchased this product)
-        var currentUser = GetCurrentUser();
+        // Lấy thông tin user hiện tại
+        HttpResponseMessage resUser = await client.GetAsync($"{_urlBase}/api/Auth/current-user");
+        if (!resUser.IsSuccessStatusCode)
+        {
+            TempData["Error"] = "Không thể lấy thông tin người dùng!";
+            return RedirectToAction("Index", "Products");
+        }
+
+        string userJson = await resUser.Content.ReadAsStringAsync();
+        var currentUser = JsonSerializer.Deserialize<UserDto>(userJson, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        int customerId = currentUser?.UserId ?? 0;
+        if (customerId == 0)
+        {
+            TempData["Error"] = "Bạn cần đăng nhập để xem các đơn hàng!";
+            return RedirectToAction("Index", "Products");
+        }
+
         ViewBag.IsLoggedIn = currentUser != null;
         ViewBag.CanReview = false; // Default to false
-        
+
         if (currentUser != null)
         {
             string? token = HttpContext.Session.GetString("JwtToken");
@@ -95,7 +116,7 @@ public class ProductsController : Controller
             {
                 using var authClient = new HttpClient { BaseAddress = new Uri(_urlBase) };
                 authClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
+
                 try
                 {
                     // Use GetPurchaseHistory instead - it returns flat data with ProductId
@@ -104,22 +125,22 @@ public class ProductsController : Controller
                     {
                         var historyJson = await historyRes.Content.ReadAsStringAsync();
                         var history = JsonSerializer.Deserialize<List<PurchaseHistoryItemDto>>(historyJson, _jsonOptions) ?? new List<PurchaseHistoryItemDto>();
-                        
+
                         // Check if user has purchased this product
                         var matchingItems = history
                             .Where(h => h.ProductId == id)
                             .ToList();
-                        
+
                         if (matchingItems.Any())
                         {
                             // More flexible status checking - case insensitive
                             // Accept any order status that contains "Xác Nhận" or "xác nhận"
                             var hasPurchased = matchingItems
-                                .Any(h => 
+                                .Any(h =>
                                 {
                                     if (string.IsNullOrEmpty(h.OrderStatus))
                                         return false;
-                                    
+
                                     var status = h.OrderStatus.Trim();
                                     return status.Contains("Xác Nhận", StringComparison.OrdinalIgnoreCase) ||
                                            status.Contains("xác nhận", StringComparison.OrdinalIgnoreCase) ||
@@ -127,7 +148,7 @@ public class ProductsController : Controller
                                            status.Equals("Chờ xác nhận", StringComparison.OrdinalIgnoreCase) ||
                                            status.Equals("Đã xác nhận", StringComparison.OrdinalIgnoreCase);
                                 });
-                            
+
                             // If no confirmed order found, check if user has ANY order for this product
                             // This is a fallback - if user came from History page, they should be able to review
                             if (!hasPurchased && matchingItems.Any())
@@ -135,9 +156,9 @@ public class ProductsController : Controller
                                 // Allow review if user has any order for this product (more lenient)
                                 hasPurchased = true;
                             }
-                            
+
                             ViewBag.CanReview = hasPurchased;
-                            
+
                             // Debug logging
                             var statuses = string.Join(", ", matchingItems.Select(h => $"'{h.OrderStatus ?? "null"}'"));
                             System.Diagnostics.Debug.WriteLine($"ProductDetail - UserId: {currentUser.UserId}, ProductId: {id}, HasPurchased: {hasPurchased}, HistoryCount: {history.Count}, MatchingItems: {matchingItems.Count}, Statuses: [{statuses}]");
@@ -176,5 +197,10 @@ public class ProductsController : Controller
         }
 
         return View(product);
+    }
+
+    private object GetCurrentUser()
+    {
+        throw new NotImplementedException();
     }
 }

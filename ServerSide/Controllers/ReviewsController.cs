@@ -160,7 +160,7 @@ namespace ServerSide.Controllers
             {
                 ProductId = dto.ProductId,
                 CustomerId = user.UserId,
-                OrderId = dto.OrderId,
+                OrderId = dto.OrderId ?? 0,
                 Rating = dto.Rating,
                 Comment = dto.Comment,
                 CreatedAt = DateTime.Now,
