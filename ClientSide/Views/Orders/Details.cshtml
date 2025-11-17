@@ -1,0 +1,215 @@
+@model ClientSide.Models.Order
+
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+}
+
+<div class="container mt-4">
+    <h2>Chi tiết đơn hàng: @Model.OrderCode</h2>
+    
+    <div class="mb-3">
+        <a asp-action="Index" class="btn btn-secondary">&laquo; Quay lại</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Thông tin đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Mã đơn:</strong> @Model.OrderCode</p>
+                    <p><strong>Ngày tạo:</strong> @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Trạng thái đơn:</strong> @Model.OrderStatus</p>
+                    <p><strong>Trạng thái thanh toán:</strong> @Model.PaymentStatus</p>
+                    <p><strong>Phương thức thanh toán:</strong> @(Model.PaymentMethod ?? "N/A")</p>
+                    @if (!string.IsNullOrEmpty(Model.Note))
+                    {
+                        <p><strong>Ghi chú:</strong> @Model.Note</p>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Tổng tiền</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-danger">
+                        @string.Format("{0:N0} VNĐ", Model.OrderDetails?.Sum(d => d.TotalPrice) ?? 0)
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Chi tiết sản phẩm</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.OrderDetails == null || !Model.OrderDetails.Any())
+            {
+                <p class="text-muted">Không có sản phẩm nào trong đơn hàng này.</p>
+            }
+            else
+            {
+                <form asp-action="UpdateQuantities" method="post">
+                    <input type="hidden" name="orderId" value="@Model.OrderId" />
+                    
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Hình ảnh</th>
+                                <th>Đơn giá</th>
+                                <th>Số lượng</th>
+                                <th>Tồn kho</th>
+                                <th>Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detail in Model.OrderDetails)
+                            {
+                                var product = detail.Product;
+                                var stockQuantity = product?.StockQuantity ?? 0;
+                                <tr>
+                                    <td>
+                                        <strong>@detail.ProductName</strong>
+                                        @if (product != null)
+                                        {
+                                            <br />
+                                            <small class="text-muted">
+                                                Thương hiệu: @(product.Brand?.BrandName ?? "N/A")
+                                            </small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (product != null && !string.IsNullOrEmpty(product.Image))
+                                        {
+                                            <img src="@product.Image" alt="@detail.ProductName" 
+                                                 style="max-width: 80px; max-height: 80px;" class="img-thumbnail" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Không có ảnh</span>
+                                        }
+                                    </td>
+                                    <td>@string.Format("{0:N0} VNĐ", detail.Price)</td>
+                                    <td>
+                                        @if (Model.PaymentStatus != "Đã thanh toán")
+                                        {
+                                            <input type="number" 
+                                                   name="quantities[@detail.OrderDetailId]" 
+                                                   value="@detail.Quantity" 
+                                                   min="1" 
+                                                   max="@stockQuantity"
+                                                   class="form-control quantity-input" 
+                                                   style="width: 100px;"
+                                                   data-price="@detail.Price"
+                                                   data-detail-id="@detail.OrderDetailId"
+                                                   required />
+                                        }
+                                        else
+                                        {
+                                            <span>@detail.Quantity</span>
+                                        }
+                                    </td>
+                                    <td>@stockQuantity</td>
+                                    <td class="item-total" data-detail-id="@detail.OrderDetailId">
+                                        @string.Format("{0:N0} VNĐ", detail.TotalPrice)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-info">
+                                <td colspan="5" class="text-end"><strong>Tổng cộng:</strong></td>
+                                <td>
+                                    <strong id="grandTotal">
+                                        @string.Format("{0:N0} VNĐ", Model.OrderDetails?.Sum(d => d.TotalPrice) ?? 0)
+                                    </strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    @if (Model.PaymentStatus != "Đã thanh toán")
+                    {
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Cập nhật số lượng</button>
+                            <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+                        </div>
+                    }
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (Model.PaymentStatus != "Đã thanh toán")
+    {
+        <div class="mt-3">
+            <form asp-action="Checkout" asp-controller="Payment" method="post">
+                <input type="hidden" name="orderId" value="@Model.OrderId" />
+                <input type="hidden" name="totalAmount" value="@(Model.OrderDetails?.Sum(d => d.TotalPrice) ?? 0)" />
+                <button type="submit" class="btn btn-success btn-lg">
+                    Thanh toán VNPay
+                </button>
+            </form>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const quantityInputs = document.querySelectorAll('.quantity-input');
+            const grandTotalElement = document.getElementById('grandTotal');
+
+            quantityInputs.forEach(function(input) {
+                input.addEventListener('change', function() {
+                    updateTotals();
+                });
+
+                input.addEventListener('input', function() {
+                    updateTotals();
+                });
+            });
+
+            function updateTotals() {
+                let grandTotal = 0;
+                
+                quantityInputs.forEach(function(input) {
+                    const quantity = parseInt(input.value) || 0;
+                    const price = parseFloat(input.dataset.price) || 0;
+                    const detailId = input.dataset.detailId;
+                    const itemTotal = quantity * price;
+                    grandTotal += itemTotal;
+
+                    // Update item total
+                    const itemTotalElement = document.querySelector(`.item-total[data-detail-id="${detailId}"]`);
+                    if (itemTotalElement) {
+                        itemTotalElement.textContent = itemTotal.toLocaleString('vi-VN') + ' VNĐ';
+                    }
+                });
+
+                // Update grand total
+                if (grandTotalElement) {
+                    grandTotalElement.textContent = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
+                }
+            }
+        });
+    </script>
+}
+

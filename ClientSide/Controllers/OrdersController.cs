@@ -275,5 +275,184 @@ namespace ClientSide.Controllers
                 return RedirectToAction("Index", "Products");
             }
         }
+
+        // GET: Orders/Details/5
+        public async Task<IActionResult> Details(int id)
+        {
+            string token = HttpContext.Session.GetString("JwtToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                TempData["Error"] = "Bạn cần đăng nhập để xem chi tiết đơn hàng!";
+                return RedirectToAction("Index", "Products");
+            }
+
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage res = await client.GetAsync(urlBase + "/api/Orders/" + id);
+            if (!res.IsSuccessStatusCode)
+            {
+                TempData["Error"] = "Không tìm thấy đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            string orderJson = await res.Content.ReadAsStringAsync();
+            var order = JsonSerializer.Deserialize<Order>(orderJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (order == null)
+            {
+                TempData["Error"] = "Không tìm thấy đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            // Load product details for each order detail
+            if (order.OrderDetails != null && order.OrderDetails.Any())
+            {
+                foreach (var detail in order.OrderDetails)
+                {
+                    try
+                    {
+                        var productRes = await client.GetAsync(urlBase + "/api/Products/" + detail.ProductId);
+                        if (productRes.IsSuccessStatusCode)
+                        {
+                            string productJson = await productRes.Content.ReadAsStringAsync();
+                            var product = JsonSerializer.Deserialize<Product>(productJson, new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+                            detail.Product = product;
+                        }
+                    }
+                    catch
+                    {
+                        // Skip if product not found
+                    }
+                }
+            }
+
+            return View(order);
+        }
+
+        // POST: Orders/UpdateQuantities
+        [HttpPost]
+        public async Task<IActionResult> UpdateQuantities(int orderId, Dictionary<int, int> quantities)
+        {
+            string token = HttpContext.Session.GetString("JwtToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                TempData["Error"] = "Bạn cần đăng nhập!";
+                return RedirectToAction("Index");
+            }
+
+            if (quantities == null || !quantities.Any())
+            {
+                TempData["Error"] = "Vui lòng nhập số lượng!";
+                return RedirectToAction("Details", new { id = orderId });
+            }
+
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // Get order details
+            HttpResponseMessage orderRes = await client.GetAsync(urlBase + "/api/Orders/" + orderId);
+            if (!orderRes.IsSuccessStatusCode)
+            {
+                TempData["Error"] = "Không tìm thấy đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            string orderJson = await orderRes.Content.ReadAsStringAsync();
+            var order = JsonSerializer.Deserialize<Order>(orderJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (order == null || order.OrderDetails == null)
+            {
+                TempData["Error"] = "Không tìm thấy chi tiết đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            // Update quantities
+            bool hasError = false;
+            string errorMessage = "";
+
+            foreach (var detail in order.OrderDetails)
+            {
+                if (quantities.ContainsKey(detail.OrderDetailId))
+                {
+                    int newQuantity = quantities[detail.OrderDetailId];
+                    
+                    // Validate quantity
+                    if (newQuantity <= 0)
+                    {
+                        hasError = true;
+                        errorMessage = "Số lượng phải lớn hơn 0!";
+                        break;
+                    }
+
+                    // Get product to check stock
+                    var productRes = await client.GetAsync(urlBase + "/api/Products/" + detail.ProductId);
+                    if (productRes.IsSuccessStatusCode)
+                    {
+                        string productJson = await productRes.Content.ReadAsStringAsync();
+                        var product = JsonSerializer.Deserialize<Product>(productJson, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                        if (product != null && newQuantity > product.StockQuantity)
+                        {
+                            hasError = true;
+                            errorMessage = $"Số lượng sản phẩm '{detail.ProductName}' vượt quá tồn kho ({product.StockQuantity})!";
+                            break;
+                        }
+                    }
+
+                    // Update order detail
+                    detail.Quantity = newQuantity;
+                    detail.TotalPrice = detail.Price * newQuantity;
+
+                    // Call API to update
+                    var updateData = new
+                    {
+                        OrderDetailId = detail.OrderDetailId,
+                        OrderId = detail.OrderId,
+                        ProductId = detail.ProductId,
+                        ProductName = detail.ProductName,
+                        Price = detail.Price,
+                        Quantity = detail.Quantity,
+                        TotalPrice = detail.TotalPrice
+                    };
+
+                    string updateJson = JsonSerializer.Serialize(updateData);
+                    StringContent content = new StringContent(updateJson, Encoding.UTF8, "application/json");
+
+                    HttpResponseMessage updateRes = await client.PutAsync(urlBase + "/api/OrderDetails/" + detail.OrderDetailId, content);
+                    if (!updateRes.IsSuccessStatusCode)
+                    {
+                        hasError = true;
+                        errorMessage = "Có lỗi xảy ra khi cập nhật số lượng!";
+                        break;
+                    }
+                }
+            }
+
+            if (hasError)
+            {
+                TempData["Error"] = errorMessage;
+            }
+            else
+            {
+                TempData["Success"] = "Đã cập nhật số lượng thành công!";
+            }
+
+            return RedirectToAction("Details", new { id = orderId });
+        }
     }
 }

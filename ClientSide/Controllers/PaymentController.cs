@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http; // Để lấy IP
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -105,6 +107,137 @@ namespace ClientSide.Controllers
 
 			// Trả về View thông báo kết quả
 			return View();
+		}
+
+		// POST: Thanh toán nhiều đơn hàng cùng lúc
+		[HttpPost]
+		public async Task<IActionResult> BulkPayment([FromForm] int[] orderIds)
+		{
+			if (orderIds == null || orderIds.Length == 0)
+			{
+				TempData["Error"] = "Vui lòng chọn ít nhất một đơn hàng để thanh toán!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			var token = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken");
+			if (string.IsNullOrEmpty(token))
+			{
+				TempData["Error"] = "Bạn cần đăng nhập để thanh toán!";
+				return RedirectToAction("Login", "Account");
+			}
+
+			var client = _httpClientFactory.CreateClient();
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+			// Lấy thông tin user
+			var userRes = await client.GetAsync($"{_urlBase}/api/Auth/current-user");
+			if (!userRes.IsSuccessStatusCode)
+			{
+				TempData["Error"] = "Không thể lấy thông tin người dùng!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			var userJson = await userRes.Content.ReadAsStringAsync();
+			var currentUser = JsonSerializer.Deserialize<ClientSide.DataDtos.UserDto>(userJson, new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true
+			});
+
+			if (currentUser == null)
+			{
+				TempData["Error"] = "Không thể lấy thông tin người dùng!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			// Lấy thông tin các đơn hàng đã chọn
+			var orders = new List<ClientSide.Models.Order>();
+			decimal totalAmount = 0;
+
+			foreach (var orderId in orderIds)
+			{
+				var orderRes = await client.GetAsync($"{_urlBase}/api/Orders/{orderId}");
+				if (orderRes.IsSuccessStatusCode)
+				{
+					var orderJsonResponse = await orderRes.Content.ReadAsStringAsync();
+					var order = JsonSerializer.Deserialize<ClientSide.Models.Order>(orderJsonResponse, new JsonSerializerOptions
+					{
+						PropertyNameCaseInsensitive = true
+					});
+
+					if (order != null && order.PaymentStatus != "Đã thanh toán" && order.CustomerId == currentUser.UserId)
+					{
+						orders.Add(order);
+						totalAmount += order.OrderDetails?.Sum(d => d.TotalPrice) ?? 0;
+					}
+				}
+			}
+
+			if (orders.Count == 0)
+			{
+				TempData["Error"] = "Không có đơn hàng hợp lệ để thanh toán!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			// Tạo đơn hàng tổng hợp từ các đơn đã chọn
+			var combinedOrderDetails = new List<object>();
+			foreach (var order in orders)
+			{
+				if (order.OrderDetails != null)
+				{
+					foreach (var detail in order.OrderDetails)
+					{
+						combinedOrderDetails.Add(new
+						{
+							ProductId = detail.ProductId,
+							ProductName = detail.ProductName,
+							Price = detail.Price,
+							Quantity = detail.Quantity,
+							TotalPrice = detail.TotalPrice
+						});
+					}
+				}
+			}
+
+			// Tạo đơn hàng tổng hợp
+			var combinedOrderRequest = new
+			{
+				OrderCode = "ORD" + DateTime.Now.Ticks,
+				CustomerId = currentUser.UserId,
+				OrderStatus = "Chờ xác nhận",
+				PaymentStatus = "Chưa thanh toán",
+				PaymentMethod = "VNPay",
+				Note = $"Đơn hàng tổng hợp từ {orders.Count} đơn: {string.Join(", ", orders.Select(o => o.OrderCode))}",
+				ProcessedBy = (int?)null,
+				CreatedAt = DateTime.Now,
+				UpdatedAt = DateTime.Now,
+				OrderDetails = combinedOrderDetails.ToArray()
+			};
+
+			string orderJson = JsonSerializer.Serialize(combinedOrderRequest);
+			StringContent content = new StringContent(orderJson, Encoding.UTF8, "application/json");
+
+			HttpResponseMessage createRes = await client.PostAsync($"{_urlBase}/api/Orders", content);
+			if (!createRes.IsSuccessStatusCode)
+			{
+				var errorText = await createRes.Content.ReadAsStringAsync();
+				TempData["Error"] = "Tạo đơn hàng tổng hợp thất bại! " + errorText;
+				return RedirectToAction("Index", "Orders");
+			}
+
+			var createdOrderJson = await createRes.Content.ReadAsStringAsync();
+			var createdOrder = JsonSerializer.Deserialize<ClientSide.Models.Order>(createdOrderJson, new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true
+			});
+
+			if (createdOrder == null)
+			{
+				TempData["Error"] = "Không thể tạo đơn hàng tổng hợp!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			// Chuyển đến thanh toán đơn hàng tổng hợp
+			return RedirectToAction("Checkout", new { orderId = createdOrder.OrderId, totalAmount = totalAmount });
 		}
 
 		// Hàm hỗ trợ gọi API ServerSide

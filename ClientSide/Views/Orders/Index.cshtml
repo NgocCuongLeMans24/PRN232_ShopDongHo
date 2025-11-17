@@ -10,58 +10,163 @@
 }
 else
 {
-    <table class="table table-striped table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>STT</th>
-                <th>Mã đơn</th>
-                <th>Ngày tạo</th>
-                <th>Trạng thái đơn</th>
-                <th>Trạng thái thanh toán</th>
-                <th>Tổng tiền</th>
-                <th>Chi tiết</th>
-                <th>Thanh toán</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < Model.Count; i++)
-            {
-                var order = Model[i];
-                var orderTotal = order.OrderDetails?.Sum(d => d.TotalPrice) ?? 0m;
+    <form id="bulkPaymentForm" method="post" asp-action="BulkPayment" asp-controller="Payment">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">Chọn tất cả</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">Bỏ chọn tất cả</button>
+            </div>
+            <button type="submit" class="btn btn-success" id="bulkPaymentBtn" disabled>
+                Thanh toán các đơn đã chọn
+            </button>
+        </div>
+
+        <table class="table table-striped table-bordered">
+            <thead class="table-dark">
                 <tr>
-                    <td>@(i + 1)</td>
-                    <td>@order.OrderCode</td>
-                    <td>@order.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@order.OrderStatus</td>
-                    <td>@order.PaymentStatus</td>
-                    <td>@string.Format("{0:N0} VNĐ", orderTotal)</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#details-@order.OrderId">
-                            Xem
-                        </button>
-                    </td>
-
-                    <td>
-
-                        @if (order.PaymentStatus != "Đã thanh toán")
-                        {
-                            <form asp-action="Checkout" asp-controller="Payment" method="post">
-
-                                <input type="hidden" name="orderId" value="@order.OrderId" />
-                                <input type="hidden" name="totalAmount" value="@orderTotal" />
-
-                                <button type="submit" class="btn btn-sm btn-success">
-                                    Thanh toán VNPay
-                                </button>
-                            </form>
-                        }
-                        else
-                        {
-                            <span class="badge bg-success">Đã thanh toán</span>
-                        }
-                    </td>
+                    <th style="width: 50px;">
+                        <input type="checkbox" id="selectAllCheckbox" />
+                    </th>
+                    <th>STT</th>
+                    <th>Mã đơn</th>
+                    <th>Ngày tạo</th>
+                    <th>Trạng thái đơn</th>
+                    <th>Trạng thái thanh toán</th>
+                    <th>Tổng tiền</th>
+                    <th>Chi tiết</th>
+                    <th>Thanh toán</th>
                 </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Count; i++)
+                {
+                    var order = Model[i];
+                    var orderTotal = order.OrderDetails?.Sum(d => d.TotalPrice) ?? 0m;
+                    var canPay = order.PaymentStatus != "Đã thanh toán";
+                    <tr>
+                        <td>
+                            @if (canPay)
+                            {
+                                <input type="checkbox" 
+                                       class="order-checkbox" 
+                                       name="orderIds" 
+                                       value="@order.OrderId"
+                                       data-total="@orderTotal" />
+                            }
+                        </td>
+                        <td>@(i + 1)</td>
+                        <td>@order.OrderCode</td>
+                        <td>@order.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@order.OrderStatus</td>
+                        <td>@order.PaymentStatus</td>
+                        <td>@string.Format("{0:N0} VNĐ", orderTotal)</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-primary">
+                                Xem
+                            </a>
+                        </td>
+                        <td>
+                            @if (canPay)
+                            {
+                                <form asp-action="Checkout" asp-controller="Payment" method="post" style="display: inline;">
+                                    <input type="hidden" name="orderId" value="@order.OrderId" />
+                                    <input type="hidden" name="totalAmount" value="@orderTotal" />
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        Thanh toán VNPay
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Đã thanh toán</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </form>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+            const orderCheckboxes = document.querySelectorAll(".order-checkbox");
+            const bulkPaymentBtn = document.getElementById("bulkPaymentBtn");
+            const selectAllBtn = document.getElementById("selectAllBtn");
+            const deselectAllBtn = document.getElementById("deselectAllBtn");
+
+            // Select all checkbox
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener("change", function() {
+                    orderCheckboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                    });
+                    updateBulkPaymentButton();
+                });
             }
-        </tbody>
-    </table>
+
+            // Individual checkboxes
+            orderCheckboxes.forEach(cb => {
+                cb.addEventListener("change", function() {
+                    updateSelectAllState();
+                    updateBulkPaymentButton();
+                });
+            });
+
+            // Select all button
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener("click", function() {
+                    orderCheckboxes.forEach(cb => cb.checked = true);
+                    if (selectAllCheckbox) selectAllCheckbox.checked = true;
+                    updateBulkPaymentButton();
+                });
+            }
+
+            // Deselect all button
+            if (deselectAllBtn) {
+                deselectAllBtn.addEventListener("click", function() {
+                    orderCheckboxes.forEach(cb => cb.checked = false);
+                    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                    updateBulkPaymentButton();
+                });
+            }
+
+            function updateSelectAllState() {
+                if (selectAllCheckbox && orderCheckboxes.length > 0) {
+                    const allChecked = Array.from(orderCheckboxes).every(cb => cb.checked);
+                    const someChecked = Array.from(orderCheckboxes).some(cb => cb.checked);
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                }
+            }
+
+            function updateBulkPaymentButton() {
+                const checkedBoxes = Array.from(orderCheckboxes).filter(cb => cb.checked);
+                if (bulkPaymentBtn) {
+                    bulkPaymentBtn.disabled = checkedBoxes.length === 0;
+                    if (checkedBoxes.length > 0) {
+                        const total = checkedBoxes.reduce((sum, cb) => sum + parseFloat(cb.dataset.total || 0), 0);
+                        bulkPaymentBtn.textContent = `Thanh toán ${checkedBoxes.length} đơn (${total.toLocaleString('vi-VN')} VNĐ)`;
+                    } else {
+                        bulkPaymentBtn.textContent = "Thanh toán các đơn đã chọn";
+                    }
+                }
+            }
+
+            // Form submission
+            const bulkPaymentForm = document.getElementById("bulkPaymentForm");
+            if (bulkPaymentForm) {
+                bulkPaymentForm.addEventListener("submit", function(e) {
+                    const checkedBoxes = Array.from(orderCheckboxes).filter(cb => cb.checked);
+                    if (checkedBoxes.length === 0) {
+                        e.preventDefault();
+                        alert("Vui lòng chọn ít nhất một đơn hàng để thanh toán.");
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
 }
