@@ -15,8 +15,6 @@ namespace ServerSide
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
                 {
@@ -24,21 +22,19 @@ namespace ServerSide
                     options.JsonSerializerOptions.WriteIndented = true;
                 });
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<Prn232ClockShopContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn")));
             builder.Services.AddScoped<EmailService>();
-            // Thêm dịch vụ CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowClient",
                     policy => policy
-                        .WithOrigins("https://localhost:5100") // client
+                        .WithOrigins("https://localhost:5100")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .AllowCredentials()); // nếu muốn gửi cookie / auth
+                        .AllowCredentials());
             });
 
             var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
@@ -71,7 +67,6 @@ namespace ServerSide
 
             app.UseHttpsRedirection();
 
-            // Cấu hình static files để serve ảnh
             app.UseStaticFiles();
 
             app.UseCors("AllowClient");

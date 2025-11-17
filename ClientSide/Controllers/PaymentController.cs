@@ -26,8 +26,6 @@ namespace ClientSide.Controllers
 			_httpContextAccessor = httpContextAccessor;
 		}
 
-		// --- HÀM TẠO URL THANH TOÁN ---
-		// (Bạn sẽ gọi hàm này từ trang Checkout, giả sử bạn đã có orderId và totalAmount)
 		[HttpPost]
 		public IActionResult Checkout(int orderId, decimal totalAmount)
 		{

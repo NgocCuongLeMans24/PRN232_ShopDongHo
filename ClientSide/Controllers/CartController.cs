@@ -25,8 +25,8 @@ namespace ClientSide.Controllers
 			_httpContextAccessor = httpContextAccessor;
 		}
 
-		// --- SỬA LỖI Ở HÀM [GET] NÀY ---
-		[HttpGet] // Đây là action [GET] để hiển thị trang
+
+		[HttpGet]
 		public async Task<IActionResult> Checkout()
 		{
 			string token = HttpContext.Session.GetString("JwtToken");
@@ -40,7 +40,6 @@ namespace ClientSide.Controllers
 				var client = _httpClientFactory.CreateClient();
 				client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-				// 1. LẤY DỮ LIỆU USER (Để lấy CustomerId)
 				var userInfo = await GetUserInfoFromApi(token);
 				if (userInfo == null)
 				{
@@ -49,11 +48,9 @@ namespace ClientSide.Controllers
 				}
 				int customerId = userInfo.UserId;
 
-				// 2. LẤY DỮ LIỆU ORDER (Dùng API của bạn)
+
 				var orders = await GetOrdersByCustomerIdFromApi(token, customerId);
 
-				// 3. TÌM ĐƠN HÀNG CẦN THANH TOÁN
-				// (Giả sử bạn muốn thanh toán đơn hàng MỚI NHẤT mà "Chưa thanh toán")
 				var orderToPay = orders
 									.Where(o => o.PaymentStatus == "Chưa thanh toán")
 									.OrderByDescending(o => o.CreatedAt)
@@ -62,7 +59,7 @@ namespace ClientSide.Controllers
 				if (orderToPay == null)
 				{
 					TempData["Error"] = "Không có đơn hàng nào chờ thanh toán.";
-					return RedirectToAction("Index", "Orders"); // Quay về trang lịch sử
+					return RedirectToAction("Index", "Orders");
 				}
 
 
@@ -78,15 +75,13 @@ namespace ClientSide.Controllers
 				var viewModel = new CheckoutViewModel
 				{
 					OrderId = orderToPay.OrderId,
-					TotalAmount = orderToPay.TotalAmount, // Giả sử OrderDto có TotalAmount
+					TotalAmount = orderToPay.TotalAmount,
 					CartItems = cartItems,
 					CustomerName = userInfo.FullName,
 					ShippingAddress = userInfo.Address,
 					PhoneNumber = userInfo.PhoneNumber
 				};
-
-				// 6. GỬI VIEWMODEL NÀY CHO VIEW "CHECKOUT.CSHTML"
-				return View(viewModel); // Gửi CheckoutViewModel (sửa lỗi)
+				return View(viewModel);
 			}
 			catch (Exception ex)
 			{
@@ -95,20 +90,16 @@ namespace ClientSide.Controllers
 			}
 		}
 
-		// --- HÀM HỖ TRỢ ĐỂ GỌI API CỦA BẠN ---
-
 		private async Task<List<OrderDto>> GetOrdersByCustomerIdFromApi(string token, int customerId)
 		{
 			var client = _httpClientFactory.CreateClient();
 			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-			// Gọi API "GetOrdersByCustomerId" (API của bạn)
 			var response = await client.GetAsync($"{_urlBase}/api/Orders/GetOrdersByCustomerId/{customerId}");
 
 			if (response.IsSuccessStatusCode)
 			{
 				var json = await response.Content.ReadAsStringAsync();
-				// (Lưu ý: Chúng ta dùng OrderDto, không phải Order (Model))
 				return JsonSerializer.Deserialize<List<OrderDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 			}
 			return new List<OrderDto>();
