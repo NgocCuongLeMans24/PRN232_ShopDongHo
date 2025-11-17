@@ -455,5 +455,66 @@ namespace ClientSide.Controllers
 
             return RedirectToAction("Details", new { id = orderId });
         }
+
+        // POST: Orders/Cancel/5
+        [HttpPost]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            string token = HttpContext.Session.GetString("JwtToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                TempData["Error"] = "Bạn cần đăng nhập để hủy đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // Kiểm tra đơn hàng trước khi hủy
+            HttpResponseMessage orderRes = await client.GetAsync(urlBase + "/api/Orders/" + id);
+            if (!orderRes.IsSuccessStatusCode)
+            {
+                TempData["Error"] = "Không tìm thấy đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            string orderJson = await orderRes.Content.ReadAsStringAsync();
+            var order = JsonSerializer.Deserialize<Order>(orderJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (order == null)
+            {
+                TempData["Error"] = "Không tìm thấy đơn hàng!";
+                return RedirectToAction("Index");
+            }
+
+            // Kiểm tra điều kiện hủy đơn
+            if (order.PaymentStatus == "Đã thanh toán")
+            {
+                TempData["Error"] = "Không thể hủy đơn hàng đã thanh toán!";
+                return RedirectToAction("Index");
+            }
+
+            if (order.OrderStatus == "Đã hủy")
+            {
+                TempData["Error"] = "Đơn hàng đã được hủy trước đó!";
+                return RedirectToAction("Index");
+            }
+
+            // Gọi API để hủy đơn
+            HttpResponseMessage cancelRes = await client.PutAsync(urlBase + "/api/Orders/" + id + "/Cancel", null);
+            if (!cancelRes.IsSuccessStatusCode)
+            {
+                var errorText = await cancelRes.Content.ReadAsStringAsync();
+                TempData["Error"] = "Hủy đơn hàng thất bại! " + errorText;
+                return RedirectToAction("Index");
+            }
+
+            TempData["Success"] = "Đơn hàng đã được hủy thành công!";
+            return RedirectToAction("Index");
+        }
     }
 }

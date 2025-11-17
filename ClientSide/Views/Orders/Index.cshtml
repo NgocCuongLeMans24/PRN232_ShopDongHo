@@ -42,7 +42,7 @@ else
                 {
                     var order = Model[i];
                     var orderTotal = order.OrderDetails?.Sum(d => d.TotalPrice) ?? 0m;
-                    var canPay = order.PaymentStatus != "Đã thanh toán";
+                    var canPay = order.PaymentStatus != "Đã thanh toán" && order.OrderStatus != "Đã hủy";
                     <tr>
                         <td>
                             @if (canPay)
@@ -68,16 +68,32 @@ else
                         <td>
                             @if (canPay)
                             {
-                                <a asp-action="Checkout" asp-controller="Payment" 
-                                   asp-route-orderId="@order.OrderId" 
-                                   asp-route-totalAmount="@orderTotal"
-                                   class="btn btn-sm btn-success">
-                                    Thanh toán VNPay
-                                </a>
+                                <div class="d-flex gap-1">
+                                    <a asp-action="Checkout" asp-controller="Payment" 
+                                       asp-route-orderId="@order.OrderId" 
+                                       asp-route-totalAmount="@orderTotal"
+                                       class="btn btn-sm btn-success">
+                                        Thanh toán VNPay
+                                    </a>
+                                    @if (order.OrderStatus != "Đã hủy")
+                                    {
+                                        <form asp-action="Cancel" method="post" style="display: inline;" 
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');">
+                                            <input type="hidden" name="id" value="@order.OrderId" />
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                Hủy đơn
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             }
                             else
                             {
                                 <span class="badge bg-success">Đã thanh toán</span>
+                            }
+                            @if (order.OrderStatus == "Đã hủy")
+                            {
+                                <span class="badge bg-secondary">Đã hủy</span>
                             }
                         </td>
                     </tr>

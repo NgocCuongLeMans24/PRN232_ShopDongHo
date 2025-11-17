@@ -88,26 +88,35 @@ namespace ServerSide.Controllers
         [HttpGet("GetPurchaseHistory/{customerId}")]
         public async Task<ActionResult<IEnumerable<PurchaseHistoryItemDto>>> GetPurchaseHistory(int customerId)
         {
-            var history = await _context.Orders
-                .Where(o => o.CustomerId == customerId)
-                .Include(o => o.OrderDetails)
-                .SelectMany(o => o.OrderDetails.Select(d => new PurchaseHistoryItemDto
+            // Query trực tiếp từ OrderDetails và join với Orders
+            // Sử dụng Include để load Order trước, sau đó select để tránh vấn đề với navigation properties
+            var history = await _context.OrderDetails
+                .Include(od => od.Order)
+                .Where(od => od.Order.CustomerId == customerId)
+                .Select(od => new PurchaseHistoryItemDto
                 {
-                    OrderId = o.OrderId,
-                    OrderCode = o.OrderCode,
-                    OrderDate = o.CreatedAt,
-                    OrderStatus = o.OrderStatus,
-                    PaymentStatus = o.PaymentStatus,
-                    ProductId = d.ProductId,
-                    ProductName = d.ProductName,
-                    Quantity = d.Quantity,
-                    Price = d.Price,
-                    TotalPrice = d.TotalPrice
-                }))
+                    OrderId = od.OrderId,
+                    OrderCode = od.Order.OrderCode,
+                    OrderDate = od.Order.CreatedAt,
+                    OrderStatus = od.Order.OrderStatus,
+                    PaymentStatus = od.Order.PaymentStatus,
+                    ProductId = od.ProductId,
+                    ProductName = od.ProductName,
+                    Quantity = od.Quantity,
+                    Price = od.Price,
+                    TotalPrice = od.TotalPrice
+                })
                 .OrderByDescending(x => x.OrderDate)
                 .ToListAsync();
 
-            return Ok(history);
+            // Loại bỏ duplicate dựa trên OrderId + ProductId + Quantity + Price (nếu có duplicate trong database)
+            var distinctHistory = history
+                .GroupBy(h => new { h.OrderId, h.ProductId, h.Quantity, h.Price })
+                .Select(g => g.First())
+                .OrderByDescending(x => x.OrderDate)
+                .ToList();
+
+            return Ok(distinctHistory);
         }
 
         // PUT: api/Orders/5
@@ -147,6 +156,16 @@ namespace ServerSide.Controllers
         public async Task<IActionResult> Create([FromBody] OrderCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // Kiểm tra xem OrderCode đã tồn tại chưa
+            var existingOrder = await _context.Orders
+                .FirstOrDefaultAsync(o => o.OrderCode == dto.OrderCode);
+            
+            if (existingOrder != null)
+            {
+                // Nếu đơn hàng đã tồn tại, trả về đơn hàng đó thay vì tạo mới
+                return Ok(existingOrder);
+            }
 
             var order = new Order
             {
@@ -210,6 +229,39 @@ namespace ServerSide.Controllers
 
 			await _context.SaveChangesAsync();
 			return NoContent();
+		}
+
+		// PUT: api/Orders/{id}/Cancel
+		[HttpPut("{id}/Cancel")]
+		public async Task<IActionResult> CancelOrder(int id)
+		{
+			var order = await _context.Orders
+				.Include(o => o.OrderDetails)
+				.FirstOrDefaultAsync(o => o.OrderId == id);
+
+			if (order == null)
+			{
+				return NotFound(new { message = "Không tìm thấy đơn hàng." });
+			}
+
+			// Kiểm tra điều kiện hủy đơn
+			if (order.PaymentStatus == "Đã thanh toán")
+			{
+				return BadRequest(new { message = "Không thể hủy đơn hàng đã thanh toán." });
+			}
+
+			if (order.OrderStatus == "Đã hủy")
+			{
+				return BadRequest(new { message = "Đơn hàng đã được hủy trước đó." });
+			}
+
+			// Cập nhật trạng thái đơn hàng
+			order.OrderStatus = "Đã hủy";
+			order.UpdatedAt = DateTime.Now;
+
+			await _context.SaveChangesAsync();
+
+			return Ok(new { message = "Đơn hàng đã được hủy thành công.", order });
 		}
 	}
 }

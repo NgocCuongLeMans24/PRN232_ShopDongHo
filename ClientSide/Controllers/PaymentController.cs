@@ -275,6 +275,20 @@ namespace ClientSide.Controllers
 				return RedirectToAction("Index", "Orders");
 			}
 
+			// Xóa các đơn hàng gốc sau khi tạo đơn tổng hợp thành công
+			foreach (var originalOrderId in orderIds)
+			{
+				try
+				{
+					var deleteRes = await client.DeleteAsync($"{_urlBase}/api/Orders/{originalOrderId}");
+					// Không cần kiểm tra kết quả, chỉ cần thử xóa
+				}
+				catch
+				{
+					// Bỏ qua lỗi nếu không xóa được
+				}
+			}
+
 			// Chuyển đến trang thanh toán đơn hàng tổng hợp
 			return RedirectToAction("Checkout", new { orderId = createdOrder.OrderId, totalAmount = totalAmount });
 		}
