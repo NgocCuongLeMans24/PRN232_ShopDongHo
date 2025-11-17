@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ServerSide.Models;
+using ServerSide.DataDtos;
 
 namespace ServerSide.Controllers
 {
@@ -44,16 +45,16 @@ namespace ServerSide.Controllers
         // PUT: api/OrderDetails/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutOrderDetail(int id, [FromBody] OrderDetail orderDetail)
+        public async Task<IActionResult> PutOrderDetail(int id, [FromBody] OrderDetailUpdateDto dto)
         {
-            if (orderDetail == null)
+            if (dto == null)
             {
                 return BadRequest("OrderDetail data is required");
             }
 
-            if (id != orderDetail.OrderDetailId)
+            if (id != dto.OrderDetailId)
             {
-                return BadRequest($"ID mismatch: route id={id}, body id={orderDetail.OrderDetailId}");
+                return BadRequest($"ID mismatch: route id={id}, body id={dto.OrderDetailId}");
             }
 
             // Load existing entity from database
@@ -64,10 +65,10 @@ namespace ServerSide.Controllers
             }
 
             // Update only the fields that should be updated
-            existingDetail.Quantity = orderDetail.Quantity;
-            existingDetail.TotalPrice = orderDetail.TotalPrice;
-            existingDetail.Price = orderDetail.Price;
-            existingDetail.ProductName = orderDetail.ProductName;
+            existingDetail.Quantity = dto.Quantity;
+            existingDetail.TotalPrice = dto.TotalPrice;
+            existingDetail.Price = dto.Price;
+            existingDetail.ProductName = dto.ProductName;
 
             try
             {
