@@ -28,6 +28,8 @@ public class ProductCreateDto
     [Range(0, int.MaxValue, ErrorMessage = "Số lượng tồn kho phải lớn hơn hoặc bằng 0")]
     public int StockQuantity { get; set; }
 
+    public int? SupplierId { get; set; } // Nullable, chỉ để hiển thị thông tin nhà cung cấp
+
     public bool? IsActive { get; set; } = true;
 }
 

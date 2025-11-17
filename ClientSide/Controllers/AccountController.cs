@@ -195,10 +195,9 @@ namespace ClientSide.Controllers
 			{
 				return RedirectToAction("Index", "Admin");
 			}
-			else if (userRole == "Staff")
+			else if (userRole == "Manager")
 			{
-				
-				return RedirectToAction("Index", "Supplier");
+				return RedirectToAction("Products", "Manager");
 			}
 			else
 			{

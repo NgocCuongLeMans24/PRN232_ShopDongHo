@@ -29,6 +29,8 @@ public partial class Prn232ClockShopContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<Supplier> Suppliers { get; set; }
+
     public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -214,8 +216,29 @@ public partial class Prn232ClockShopContext : DbContext
 
             entity.HasOne(d => d.Supplier).WithMany(p => p.Products)
                 .HasForeignKey(d => d.SupplierId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.SetNull) // Set null khi supplier bị xóa
                 .HasConstraintName("FK__Products__Suppli__5441852A");
+        });
+
+        modelBuilder.Entity<Supplier>(entity =>
+        {
+            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__4BE666B4");
+
+            entity.Property(e => e.SupplierId).HasColumnName("SupplierID");
+            entity.Property(e => e.SupplierName).HasMaxLength(200);
+            entity.Property(e => e.ContactPerson).HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(50);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.Country).HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Review>(entity =>

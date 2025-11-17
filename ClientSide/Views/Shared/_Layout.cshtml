@@ -28,21 +28,21 @@
                         @{
                             var userInfoJson = Context.Session.GetString("UserInfo");
                             var isLoggedIn = !string.IsNullOrEmpty(userInfoJson);
-                            var isSupplier = false;
+                            var isManager = false;
                             if (isLoggedIn)
                             {
                                 try
                                 {
                                     var userInfo = System.Text.Json.JsonSerializer.Deserialize<UserDto>(userInfoJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                                    isSupplier = userInfo?.RoleName == "Supplier";
+                                    isManager = userInfo?.RoleName == "Manager";
                                 }
                                 catch { }
                             }
                         }
-                        @if (isSupplier)
+                        @if (isManager)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Supplier" asp-action="Products">Quản lý sản phẩm</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Manager" asp-action="Products">Quản lý sản phẩm</a>
                             </li>
                         }
                         <li class="nav-item">

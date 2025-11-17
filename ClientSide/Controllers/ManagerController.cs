@@ -7,10 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace ClientSide.Controllers;
 
-public class SupplierController : Controller
+public class ManagerController : Controller
 {
     private readonly string _urlBase = MyTools.getUrl().TrimEnd('/');
     private readonly JsonSerializerOptions _jsonOptions = new()
@@ -18,7 +19,7 @@ public class SupplierController : Controller
         PropertyNameCaseInsensitive = true
     };
 
-    // Kiểm tra user có phải Supplier không
+    // Kiểm tra user có phải Manager không
     private UserDto? GetCurrentUser()
     {
         try
@@ -36,8 +37,8 @@ public class SupplierController : Controller
         }
     }
 
-    private bool IsSupplier(UserDto? user) =>
-        user != null && string.Equals(user.RoleName, "Supplier", StringComparison.OrdinalIgnoreCase);
+    private bool IsManager(UserDto? user) =>
+        user != null && string.Equals(user.RoleName, "Manager", StringComparison.OrdinalIgnoreCase);
 
     private string NormalizeImageUrl(string? imagePath)
     {
@@ -54,13 +55,13 @@ public class SupplierController : Controller
         return $"{_urlBase}/{imagePath.TrimStart('/')}";
     }
 
-    // GET: Supplier/Products - Danh sách sản phẩm của Supplier
+    // GET: Manager/Products - Danh sách tất cả sản phẩm (Manager quản lý tất cả)
     public async Task<IActionResult> Products()
     {
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
-            TempData["Error"] = "Bạn không có quyền truy cập trang này. Chỉ Supplier mới được phép.";
+            TempData["Error"] = "Bạn không có quyền truy cập trang này. Chỉ Manager mới được phép.";
             return RedirectToAction("Index", "Products");
         }
 
@@ -74,7 +75,7 @@ public class SupplierController : Controller
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync("/api/Supplier/Products");
+        var response = await client.GetAsync("/api/Manager/Products");
         if (!response.IsSuccessStatusCode)
         {
             TempData["Error"] = "Không thể tải danh sách sản phẩm.";
@@ -82,6 +83,8 @@ public class SupplierController : Controller
         }
 
         var content = await response.Content.ReadAsStringAsync();
+        
+        // Deserialize trực tiếp vào Product model (JSON property names sẽ match)
         var products = JsonSerializer.Deserialize<List<Product>>(content, _jsonOptions) ?? new List<Product>();
 
         foreach (var product in products)
@@ -92,11 +95,11 @@ public class SupplierController : Controller
         return View(products);
     }
 
-    // GET: Supplier/Products/Details/5
+    // GET: Manager/Products/Details/5
     public async Task<IActionResult> Details(int id)
     {
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
             TempData["Error"] = "Bạn không có quyền truy cập.";
             return RedirectToAction("Products");
@@ -111,7 +114,7 @@ public class SupplierController : Controller
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync($"/api/Supplier/Products/{id}");
+        var response = await client.GetAsync($"/api/Manager/Products/{id}");
         if (!response.IsSuccessStatusCode)
         {
             TempData["Error"] = "Không thể tải thông tin sản phẩm.";
@@ -119,21 +122,62 @@ public class SupplierController : Controller
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        var product = JsonSerializer.Deserialize<Product>(content, _jsonOptions);
-        if (product != null)
+        
+        // Deserialize từ ProductDto (API trả về)
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+        
+        if (root.ValueKind != JsonValueKind.Object)
         {
-            ViewBag.DisplayImageUrl = NormalizeImageUrl(product.Image);
+            TempData["Error"] = "Dữ liệu sản phẩm không hợp lệ.";
+            return RedirectToAction("Products");
         }
 
+        var product = new Product
+        {
+            ProductId = root.GetProperty("productId").GetInt32(),
+            ProductCode = root.GetProperty("productCode").GetString() ?? "",
+            ProductName = root.GetProperty("productName").GetString() ?? "",
+            BrandId = root.GetProperty("brandId").GetInt32(),
+            CategoryId = root.GetProperty("categoryId").GetInt32(),
+            Description = root.TryGetProperty("description", out var desc) ? desc.GetString() : null,
+            Image = root.TryGetProperty("image", out var img) ? img.GetString() : null,
+            Price = root.GetProperty("price").GetDecimal(),
+            StockQuantity = root.TryGetProperty("stockQuantity", out var sq) ? sq.GetInt32() : 0,
+            SupplierId = root.TryGetProperty("supplierId", out var sid) && sid.ValueKind != JsonValueKind.Null ? sid.GetInt32() : null,
+            IsActive = root.TryGetProperty("isActive", out var active) && active.ValueKind != JsonValueKind.Null ? active.GetBoolean() : true,
+            CreatedAt = root.TryGetProperty("createdAt", out var ca) && ca.ValueKind != JsonValueKind.Null ? ca.GetDateTime() : null,
+            UpdatedAt = root.TryGetProperty("updatedAt", out var ua) && ua.ValueKind != JsonValueKind.Null ? ua.GetDateTime() : null,
+            Brand = root.TryGetProperty("brand", out var brand) && brand.ValueKind != JsonValueKind.Null ? new Brand
+            {
+                BrandId = brand.GetProperty("brandId").GetInt32(),
+                BrandName = brand.GetProperty("brandName").GetString() ?? ""
+            } : null!,
+            Category = root.TryGetProperty("category", out var cat) && cat.ValueKind != JsonValueKind.Null ? new Category
+            {
+                CategoryId = cat.GetProperty("categoryId").GetInt32(),
+                CategoryName = cat.GetProperty("categoryName").GetString() ?? ""
+            } : null!,
+            Supplier = root.TryGetProperty("supplier", out var sup) && sup.ValueKind != JsonValueKind.Null ? new Supplier
+            {
+                SupplierId = sup.GetProperty("supplierId").GetInt32(),
+                SupplierName = sup.GetProperty("supplierName").GetString() ?? "",
+                ContactPerson = sup.TryGetProperty("contactPerson", out var cp) ? cp.GetString() : null,
+                Email = sup.TryGetProperty("email", out var email) ? email.GetString() : null,
+                PhoneNumber = sup.TryGetProperty("phoneNumber", out var phone) ? phone.GetString() : null
+            } : null
+        };
+
+        ViewBag.DisplayImageUrl = NormalizeImageUrl(product.Image);
         return View(product);
     }
 
-    // GET: Supplier/Products/Create
+    // GET: Manager/Products/Create
     [HttpGet]
     public async Task<IActionResult> Create()
     {
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
             TempData["Error"] = "Bạn không có quyền tạo sản phẩm.";
             return RedirectToAction("Products");
@@ -143,13 +187,13 @@ public class SupplierController : Controller
         return View(new ProductCreateViewModel());
     }
 
-    // POST: Supplier/Products/Create
+    // POST: Manager/Products/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ProductCreateViewModel model)
     {
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
             TempData["Error"] = "Bạn không có quyền tạo sản phẩm.";
             return RedirectToAction("Products");
@@ -214,12 +258,13 @@ public class SupplierController : Controller
             Image = imageUrl,
             Price = model.Price,
             StockQuantity = model.StockQuantity,
+            SupplierId = model.SupplierId, // Nullable, chỉ để hiển thị thông tin nhà cung cấp
             IsActive = model.IsActive
         };
 
         var requestPayload = JsonSerializer.Serialize(productData);
         var content = new StringContent(requestPayload, Encoding.UTF8, "application/json");
-        var response = await client.PostAsync("/api/Supplier/Products", content);
+        var response = await client.PostAsync("/api/Manager/Products", content);
 
         if (response.IsSuccessStatusCode)
         {
@@ -227,19 +272,36 @@ public class SupplierController : Controller
             return RedirectToAction("Products");
         }
 
-        string apiError = await response.Content.ReadAsStringAsync();
+        // Chỉ đọc error message nếu có content
+        string apiError = "Lỗi không xác định";
+        if (response.Content != null)
+        {
+            try
+            {
+                apiError = await response.Content.ReadAsStringAsync();
+            }
+            catch
+            {
+                apiError = $"HTTP {(int)response.StatusCode}: {response.StatusCode}";
+            }
+        }
+        else
+        {
+            apiError = $"HTTP {(int)response.StatusCode}: {response.StatusCode}";
+        }
+        
         TempData["Error"] = $"Không thể thêm sản phẩm. Chi tiết: {apiError}";
         await PopulateSelectLists();
         ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
         return View(model);
     }
 
-    // GET: Supplier/Products/Edit/5
+    // GET: Manager/Products/Edit/5
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
             TempData["Error"] = "Bạn không có quyền chỉnh sửa sản phẩm.";
             return RedirectToAction("Products");
@@ -254,7 +316,7 @@ public class SupplierController : Controller
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.GetAsync($"/api/Supplier/Products/{id}");
+        var response = await client.GetAsync($"/api/Manager/Products/{id}");
         if (!response.IsSuccessStatusCode)
         {
             TempData["Error"] = "Không thể tải thông tin sản phẩm.";
@@ -262,39 +324,49 @@ public class SupplierController : Controller
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        var product = JsonSerializer.Deserialize<Product>(content, _jsonOptions);
-
-        if (product == null)
+        
+        // Deserialize từ ProductDto (API trả về)
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+        
+        if (root.ValueKind != JsonValueKind.Object)
         {
+            TempData["Error"] = "Dữ liệu sản phẩm không hợp lệ.";
             return RedirectToAction("Products");
         }
 
         await PopulateSelectLists();
+        var imageUrl = root.TryGetProperty("image", out var img) ? img.GetString() : null;
         var viewModel = new ProductCreateViewModel
         {
-            ProductCode = product.ProductCode,
-            ProductName = product.ProductName,
-            BrandId = product.BrandId,
-            CategoryId = product.CategoryId,
-            Description = product.Description,
-            Image = product.Image,
-            Price = product.Price,
-            StockQuantity = product.StockQuantity ?? 0,
-            IsActive = product.IsActive ?? true
+            ProductId = id, // Lưu ID để dùng khi submit
+            ProductCode = root.GetProperty("productCode").GetString() ?? "",
+            ProductName = root.GetProperty("productName").GetString() ?? "",
+            BrandId = root.GetProperty("brandId").GetInt32(),
+            CategoryId = root.GetProperty("categoryId").GetInt32(),
+            Description = root.TryGetProperty("description", out var desc) ? desc.GetString() : null,
+            Image = imageUrl,
+            Price = root.GetProperty("price").GetDecimal(),
+            StockQuantity = root.GetProperty("stockQuantity").GetInt32(),
+            SupplierId = root.TryGetProperty("supplierId", out var sid) && sid.ValueKind != JsonValueKind.Null ? sid.GetInt32() : null,
+            IsActive = root.TryGetProperty("isActive", out var active) && active.ValueKind != JsonValueKind.Null ? active.GetBoolean() : true
         };
 
-        ViewBag.CurrentImageUrl = NormalizeImageUrl(product.Image);
+        ViewBag.CurrentImageUrl = NormalizeImageUrl(imageUrl);
 
         return View(viewModel);
     }
 
-    // POST: Supplier/Products/Edit/5
+    // POST: Manager/Products/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, ProductCreateViewModel model)
     {
+        // Đảm bảo ID được lấy từ route hoặc model
+        var productId = model.ProductId ?? id;
+        
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
             TempData["Error"] = "Bạn không có quyền chỉnh sửa sản phẩm.";
             return RedirectToAction("Products");
@@ -332,7 +404,16 @@ public class SupplierController : Controller
                 var uploadResult = await uploadResponse.Content.ReadAsStringAsync();
                 var uploadData = JsonSerializer.Deserialize<UploadResponse>(uploadResult, _jsonOptions);
                 imageUrl = uploadData?.RelativeUrl ?? uploadData?.Url;
-                model.Image = imageUrl;
+                if (!string.IsNullOrEmpty(imageUrl))
+                {
+                    model.Image = imageUrl;
+                }
+            }
+            else
+            {
+                // Nếu upload ảnh thất bại, vẫn tiếp tục với ảnh cũ
+                var errorMsg = await uploadResponse.Content.ReadAsStringAsync();
+                TempData["Warning"] = $"Cảnh báo: Không thể upload ảnh mới. Sẽ giữ ảnh cũ. Chi tiết: {errorMsg}";
             }
         }
 
@@ -350,33 +431,79 @@ public class SupplierController : Controller
             Image = imageUrl,
             Price = model.Price,
             StockQuantity = model.StockQuantity,
+            SupplierId = model.SupplierId, // Nullable, chỉ để hiển thị thông tin nhà cung cấp
             IsActive = model.IsActive
         };
 
         var requestPayload = JsonSerializer.Serialize(productData);
         var content = new StringContent(requestPayload, Encoding.UTF8, "application/json");
-        var response = await client.PutAsync($"/api/Supplier/Products/{id}", content);
+        
+        // Debug: Log request
+        System.Diagnostics.Debug.WriteLine($"PUT Request to: /api/Manager/Products/{productId}");
+        System.Diagnostics.Debug.WriteLine($"Payload: {requestPayload}");
+        
+        var response = await client.PutAsync($"/api/Manager/Products/{productId}", content);
 
-        if (response.IsSuccessStatusCode)
+        // Debug: Log response
+        System.Diagnostics.Debug.WriteLine($"Response Status: {response.StatusCode}");
+        System.Diagnostics.Debug.WriteLine($"IsSuccessStatusCode: {response.IsSuccessStatusCode}");
+
+        if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent)
         {
             TempData["Success"] = "Cập nhật sản phẩm thành công!";
             return RedirectToAction("Products");
         }
 
-        string apiError = await response.Content.ReadAsStringAsync();
+        // Chỉ đọc error message nếu có content
+        string apiError = "Lỗi không xác định";
+        if (response.Content != null)
+        {
+            try
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"Error Content: {errorContent}");
+                
+                // Thử parse JSON error message
+                try
+                {
+                    using var errorDoc = JsonDocument.Parse(errorContent);
+                    if (errorDoc.RootElement.TryGetProperty("message", out var messageProp))
+                    {
+                        apiError = messageProp.GetString() ?? errorContent;
+                    }
+                    else
+                    {
+                        apiError = errorContent;
+                    }
+                }
+                catch
+                {
+                    apiError = errorContent;
+                }
+            }
+            catch (Exception ex)
+            {
+                apiError = $"HTTP {(int)response.StatusCode}: {response.StatusCode} - {ex.Message}";
+            }
+        }
+        else
+        {
+            apiError = $"HTTP {(int)response.StatusCode}: {response.StatusCode}";
+        }
+        
         TempData["Error"] = $"Không thể cập nhật sản phẩm. Chi tiết: {apiError}";
         await PopulateSelectLists();
         ViewBag.CurrentImageUrl = NormalizeImageUrl(model.Image);
         return View(model);
     }
 
-    // POST: Supplier/Products/Delete/5
+    // POST: Manager/Products/Delete/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         var currentUser = GetCurrentUser();
-        if (!IsSupplier(currentUser))
+        if (!IsManager(currentUser))
         {
             TempData["Error"] = "Bạn không có quyền xóa sản phẩm.";
             return RedirectToAction("Products");
@@ -391,7 +518,7 @@ public class SupplierController : Controller
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.DeleteAsync($"/api/Supplier/Products/{id}");
+        var response = await client.DeleteAsync($"/api/Manager/Products/{id}");
         if (response.IsSuccessStatusCode)
         {
             TempData["Success"] = "Xóa sản phẩm thành công!";
@@ -411,6 +538,7 @@ public class SupplierController : Controller
 
         var brandResponse = await client.GetAsync($"{_urlBase}/api/Brands");
         var categoryResponse = await client.GetAsync($"{_urlBase}/api/Categories");
+        var supplierResponse = await client.GetAsync($"{_urlBase}/api/Suppliers"); // API để lấy danh sách suppliers
 
         var brands = new List<Brand>();
         if (brandResponse.IsSuccessStatusCode)
@@ -426,12 +554,23 @@ public class SupplierController : Controller
             categories = JsonSerializer.Deserialize<List<Category>>(categoryJson, _jsonOptions) ?? new List<Category>();
         }
 
+        var suppliers = new List<Supplier>();
+        if (supplierResponse.IsSuccessStatusCode)
+        {
+            var supplierJson = await supplierResponse.Content.ReadAsStringAsync();
+            suppliers = JsonSerializer.Deserialize<List<Supplier>>(supplierJson, _jsonOptions) ?? new List<Supplier>();
+        }
+
         ViewBag.BrandList = brands
             .Select(b => new SelectListItem { Value = b.BrandId.ToString(), Text = b.BrandName })
             .ToList();
 
         ViewBag.CategoryList = categories
             .Select(c => new SelectListItem { Value = c.CategoryId.ToString(), Text = c.CategoryName })
+            .ToList();
+
+        ViewBag.SupplierList = suppliers
+            .Select(s => new SelectListItem { Value = s.SupplierId.ToString(), Text = s.SupplierName })
             .ToList();
     }
 

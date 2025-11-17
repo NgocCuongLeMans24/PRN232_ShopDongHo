@@ -37,8 +37,6 @@ public partial class User
 
     public virtual ICollection<Order> OrderProcessedByNavigations { get; set; } = new List<Order>();
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
-
     public virtual ICollection<Review> ReviewApprovedByNavigations { get; set; } = new List<Review>();
 
     public virtual ICollection<Review> ReviewCustomers { get; set; } = new List<Review>();

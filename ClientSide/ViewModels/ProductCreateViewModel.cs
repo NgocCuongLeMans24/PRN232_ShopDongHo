@@ -4,6 +4,8 @@ namespace ClientSide.ViewModels;
 
 public class ProductCreateViewModel
 {
+    public int? ProductId { get; set; } // Để lưu ID khi edit
+
     [Required(ErrorMessage = "Vui lòng nhập mã sản phẩm")]
     [MaxLength(50)]
     public string ProductCode { get; set; } = string.Empty;
@@ -31,6 +33,9 @@ public class ProductCreateViewModel
 
     [Range(0, int.MaxValue, ErrorMessage = "Số lượng tồn phải lớn hơn hoặc bằng 0")]
     public int StockQuantity { get; set; }
+
+    [Display(Name = "Nhà cung cấp")]
+    public int? SupplierId { get; set; } // Nullable, chỉ để hiển thị thông tin nhà cung cấp
 
     [Display(Name = "Kích hoạt")]
     public bool IsActive { get; set; } = true;

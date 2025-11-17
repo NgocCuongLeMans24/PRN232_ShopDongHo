@@ -23,7 +23,7 @@ public partial class Product
 
     public int StockQuantity { get; set; }
 
-    public int SupplierId { get; set; }
+    public int? SupplierId { get; set; } // Nullable, chỉ để hiển thị thông tin nhà cung cấp
 
     public bool? IsActive { get; set; }
 
@@ -39,7 +39,7 @@ public partial class Product
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
-    public virtual User Supplier { get; set; } = null!;
+    public virtual Supplier? Supplier { get; set; } // Nullable
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 

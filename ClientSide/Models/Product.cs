@@ -29,7 +29,7 @@ public partial class Product
 
     public DateTime? UpdatedAt { get; set; }
 
-    public int SupplierId { get; set; }
+    public int? SupplierId { get; set; } // Nullable, chỉ để hiển thị thông tin nhà cung cấp
 
     public virtual Brand Brand { get; set; } = null!;
 
@@ -41,5 +41,5 @@ public partial class Product
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
 
-    public virtual User Supplier { get; set; } = null!;
+    public virtual Supplier? Supplier { get; set; } // Nullable
 }

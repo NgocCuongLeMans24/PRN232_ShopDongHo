@@ -108,6 +108,7 @@ namespace ServerSide.Controllers
                 Image = productDto.Image,
                 Price = productDto.Price,
                 StockQuantity = productDto.StockQuantity,
+                SupplierId = productDto.SupplierId, // Nullable, chỉ để hiển thị thông tin
                 IsActive = productDto.IsActive,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
