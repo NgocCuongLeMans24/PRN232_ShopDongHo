@@ -86,19 +86,42 @@ public class ProductsController : Controller
             ViewBag.Reviews = null;
         }
 
-        // Check if current user can review (has purchased this product)
-        var currentUser = GetCurrentUser();
+        // Lấy thông tin user hiện tại
+        string? token = HttpContext.Session.GetString("JwtToken");
+
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        HttpResponseMessage resUser = await client.GetAsync(_urlBase + "/api/Auth/current-user");
+        if (!resUser.IsSuccessStatusCode)
+        {
+            TempData["Error"] = "Không thể lấy thông tin người dùng!";
+            return RedirectToAction("Index", "Products");
+        }
+
+        string userJson = await resUser.Content.ReadAsStringAsync();
+        var currentUser = JsonSerializer.Deserialize<UserDto>(userJson, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        int customerId = currentUser?.UserId ?? 0;
+        if (customerId == 0)
+        {
+            TempData["Error"] = "Bạn cần đăng nhập để xem các đơn hàng!";
+            return RedirectToAction("Index", "Products");
+        }
+
         ViewBag.IsLoggedIn = currentUser != null;
         ViewBag.CanReview = false; // Default to false
-        
+
         if (currentUser != null)
         {
-            string? token = HttpContext.Session.GetString("JwtToken");
             if (!string.IsNullOrEmpty(token))
             {
                 using var authClient = new HttpClient { BaseAddress = new Uri(_urlBase) };
                 authClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
+
                 try
                 {
                     // Use GetPurchaseHistory instead - it returns flat data with ProductId
@@ -107,12 +130,12 @@ public class ProductsController : Controller
                     {
                         var historyJson = await historyRes.Content.ReadAsStringAsync();
                         var history = JsonSerializer.Deserialize<List<PurchaseHistoryItemDto>>(historyJson, _jsonOptions) ?? new List<PurchaseHistoryItemDto>();
-                        
+
                         // Check if user has purchased this product
                         var matchingItems = history
                             .Where(h => h.ProductId == id)
                             .ToList();
-                        
+
                         if (matchingItems.Any())
                         {
                             // Chỉ cho phép đánh giá khi đã thanh toán
@@ -121,7 +144,7 @@ public class ProductsController : Controller
                                          h.PaymentStatus == "Đã thanh toán");
                             
                             ViewBag.CanReview = hasPurchased;
-                            
+
                             // Debug logging
                             var statuses = string.Join(", ", matchingItems.Select(h => $"'{h.OrderStatus ?? "null"}'"));
                             System.Diagnostics.Debug.WriteLine($"ProductDetail - UserId: {currentUser.UserId}, ProductId: {id}, HasPurchased: {hasPurchased}, HistoryCount: {history.Count}, MatchingItems: {matchingItems.Count}, Statuses: [{statuses}]");
