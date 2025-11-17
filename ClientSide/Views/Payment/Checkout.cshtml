@@ -65,24 +65,20 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
 
-            // Lấy nút bấm bằng ID
             var btnVnPay = document.getElementById("btnVnPay");
 
             if (btnVnPay) {
                 btnVnPay.onclick = function(e) {
-                    e.preventDefault(); // Ngăn submit (nếu lỡ đặt trong form)
+                    e.preventDefault();
 
-                    // Lấy dữ liệu từ Model (được render ra từ C#)
                     var orderId = @Model.OrderId;
                     var totalAmount = @Model.TotalAmount;
 
-                    // 3. Dùng JS (Fetch) gọi về PaymentController (ClientSide)
                     fetch('/Payment/Checkout', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                         },
-                        // Gửi dữ liệu đi
                         body: 'orderId=' + orderId + '&totalAmount=' + totalAmount
                     })
                     .then(response => {
@@ -92,7 +88,6 @@
                         return response.json();
                     })
                     .then(data => {
-                        // 4. Nhận URL từ JSON (Bước 1) và điều hướng trình duyệt
                         if (data.paymentUrl) {
                             window.location.href = data.paymentUrl;
                         } else {

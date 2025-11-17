@@ -310,7 +310,6 @@
             {
                 <div class="list-item">
                     <div class="list-avatar avatar-order">
-                        @* Giả sử OrderDto có OrderId *@
                         <span style="font-size: 0.8em;">#@order.OrderId</span>
                     </div>
                     <div class="list-info">
@@ -328,7 +327,6 @@
             {
                 <div class="list-item">
                     <div class="list-avatar avatar-product">
-                        @* (Đã sửa lỗi null ProductName từ trước) *@
                         @(!string.IsNullOrEmpty(product.ProductName) ? product.ProductName.Substring(0, 1) : "P")
                     </div>
                     <div class="list-info">

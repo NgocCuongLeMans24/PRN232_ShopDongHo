@@ -68,15 +68,14 @@ namespace ClientSide.Controllers
 				viewModel.TotalOrderCount = allOrders.Count;
 				viewModel.TotalSupplierCount = suppliers.Count;
 
-				// Điền các danh sách rút gọn (cho 2 thẻ dưới)
 				viewModel.RecentCustomers = customers
-												.OrderByDescending(c => c.UserId) // Giả sử có UserId
-												.Take(5) // Lấy 5 người mới nhất
+												.OrderByDescending(c => c.UserId)
+												.Take(5)
 												.ToList();
 
 				viewModel.RecentProducts = allProducts
-												.OrderByDescending(p => p.ProductId) // Giả sử có ProductId
-												.Take(5) // Lấy 5 sản phẩm mới nhất
+												.OrderByDescending(p => p.ProductId)
+												.Take(5)
 												.ToList();
 				viewModel.RecentOrders = allOrders
 												.OrderByDescending(o => o.OrderId)
@@ -84,8 +83,8 @@ namespace ClientSide.Controllers
 												.ToList();
 
 				viewModel.RecentSuppliers = suppliers
-												.OrderByDescending(s => s.UserId) // Giả sử có UserId
-												.Take(5) // Lấy 5 nhà cung cấp mới nhất
+												.OrderByDescending(s => s.UserId)
+												.Take(5)
 												.ToList();
 			}
 			catch (HttpRequestException ex)
@@ -97,7 +96,6 @@ namespace ClientSide.Controllers
 					_httpContextAccessor.HttpContext?.Session.Clear();
 					return RedirectToAction("Login", "Account");
 				}
-				// Nếu lỗi, trả về ViewModel trống để View không bị crash
 				return View(new AdminDashboardViewModel());
 			}
 
@@ -121,7 +119,6 @@ namespace ClientSide.Controllers
 			client.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", token);
 
-			// Build URL
 			var builder = new UriBuilder($"{_urlBase}/api/Admin/GetOrdersPaged");
 			var query = HttpUtility.ParseQueryString(string.Empty);
 			query["pageNumber"] = pageNumber.ToString();
@@ -160,7 +157,6 @@ namespace ClientSide.Controllers
 
 			try
 			{
-				// Giả sử bạn có API GET /api/Brands
 				var brandResponse = await client.GetAsync($"{_urlBase}/api/Brands");
 				if (brandResponse.IsSuccessStatusCode)
 				{
@@ -168,7 +164,6 @@ namespace ClientSide.Controllers
 					ViewBag.Brands = JsonSerializer.Deserialize<List<BrandDto>>(json, options);
 				}
 
-				// Giả sử bạn có API GET /api/Categories
 				var categoryResponse = await client.GetAsync($"{_urlBase}/api/Categories");
 				if (categoryResponse.IsSuccessStatusCode)
 				{
@@ -183,7 +178,6 @@ namespace ClientSide.Controllers
 			}
 		}
 
-		// --- SỬA ACTION INDEX ---
 		[HttpGet]
 		public async Task<IActionResult> AdminProducts(
 			int pageNumber = 1,
@@ -202,7 +196,6 @@ namespace ClientSide.Controllers
 			client.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", token);
 
-			// Build URL
 			var builder = new UriBuilder($"{_urlBase}/api/Admin/GetProductsPaged");
 			var query = HttpUtility.ParseQueryString(string.Empty);
 			query["pageNumber"] = pageNumber.ToString();
@@ -229,10 +222,8 @@ namespace ClientSide.Controllers
 				ViewBag.Error = $"Lỗi khi gọi API: {ex.Message}";
 			}
 
-			// Tải dữ liệu cho dropdowns
 			await LoadDropdownsToViewBag();
 
-			// Gán lại filter vào ViewModel để View có thể đọc
 			viewModel.BrandId = brandId;
 			viewModel.CategoryId = categoryId;
 
@@ -240,7 +231,6 @@ namespace ClientSide.Controllers
 		}
 
 
-		// Hàm hỗ trợ gọi API
 		private async Task<T> GetApiData<T>(HttpClient client, string url)
 		{
 			var response = await client.GetAsync(url);

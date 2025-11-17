@@ -2,7 +2,6 @@
 @using ClientSide.DataDtos;
 @{
     ViewData["Title"] = "Chỉnh sửa người dùng";
-    // Lấy danh sách Roles từ ViewBag
     var roles = ViewBag.Roles as IEnumerable<RoleDto>;
 }
 
@@ -84,7 +83,6 @@
 
 @section Scripts {
     @{
-        // Thêm phần này để validation hoạt động
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }

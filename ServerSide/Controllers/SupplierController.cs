@@ -19,7 +19,6 @@ public class SupplierController : ControllerBase
         _context = context;
     }
 
-    // Lấy SupplierID từ JWT token
     private int GetCurrentSupplierId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -30,7 +29,6 @@ public class SupplierController : ControllerBase
         throw new UnauthorizedAccessException("Không thể xác định Supplier");
     }
 
-    // Kiểm tra user có phải Supplier không
     private async Task<bool> IsSupplier(int userId)
     {
         var user = await _context.Users
@@ -39,7 +37,6 @@ public class SupplierController : ControllerBase
         return user?.Role?.RoleName == "Supplier";
     }
 
-    // GET: api/Supplier/Products - Lấy tất cả sản phẩm của Supplier hiện tại
     [HttpGet("Products")]
     public async Task<ActionResult<IEnumerable<Product>>> GetMyProducts()
     {
@@ -60,7 +57,6 @@ public class SupplierController : ControllerBase
         return Ok(products);
     }
 
-    // GET: api/Supplier/Products/5 - Lấy chi tiết sản phẩm của Supplier
     [HttpGet("Products/{id}")]
     public async Task<ActionResult<Product>> GetMyProduct(int id)
     {
@@ -84,7 +80,6 @@ public class SupplierController : ControllerBase
         return product;
     }
 
-    // POST: api/Supplier/Products - Tạo sản phẩm mới
     [HttpPost("Products")]
     public async Task<ActionResult<Product>> CreateProduct(ProductCreateDto productDto)
     {
@@ -100,7 +95,6 @@ public class SupplierController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        // Kiểm tra mã sản phẩm trùng
         var exists = await _context.Products
             .AnyAsync(p => p.ProductCode == productDto.ProductCode);
         if (exists)
@@ -119,7 +113,7 @@ public class SupplierController : ControllerBase
             Price = productDto.Price,
             StockQuantity = productDto.StockQuantity,
             IsActive = productDto.IsActive,
-            SupplierId = supplierId, // Gán SupplierID từ token
+            SupplierId = supplierId,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
@@ -133,7 +127,6 @@ public class SupplierController : ControllerBase
         return CreatedAtAction(nameof(GetMyProduct), new { id = product.ProductId }, product);
     }
 
-    // PUT: api/Supplier/Products/5 - Cập nhật sản phẩm
     [HttpPut("Products/{id}")]
     public async Task<IActionResult> UpdateProduct(int id, ProductCreateDto productDto)
     {
@@ -152,7 +145,6 @@ public class SupplierController : ControllerBase
             return NotFound("Sản phẩm không tồn tại hoặc không thuộc quyền quản lý của bạn");
         }
 
-        // Kiểm tra mã sản phẩm trùng (trừ sản phẩm hiện tại)
         var codeExists = await _context.Products
             .AnyAsync(p => p.ProductCode == productDto.ProductCode && p.ProductId != id);
         if (codeExists)
@@ -187,7 +179,6 @@ public class SupplierController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/Supplier/Products/5 - Xóa sản phẩm
     [HttpDelete("Products/{id}")]
     public async Task<IActionResult> DeleteProduct(int id)
     {

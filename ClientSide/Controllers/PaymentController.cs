@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks; // Cho async
+using System.Threading.Tasks;
 
 namespace ClientSide.Controllers
 {
@@ -55,7 +55,6 @@ namespace ClientSide.Controllers
 			return Redirect(paymentUrl);
 		}
 
-		// --- HÀM XỬ LÝ KẾT QUẢ TRẢ VỀ TỪ VNPAY ---
 		[HttpGet]
 		public async Task<IActionResult> PaymentCallback()
 		{
@@ -75,23 +74,17 @@ namespace ClientSide.Controllers
 			string vnp_SecureHash = pay.GetResponseData("vnp_SecureHash");
 			string vnp_HashSecret = _config.GetValue<string>("VnPay:HashSecret");
 
-			// Xác thực chữ ký
 			bool checkSignature = pay.ValidateSignature(vnp_SecureHash, vnp_HashSecret);
 
 			if (checkSignature)
 			{
 				if (vnp_ResponseCode == "00")
 				{
-					// Thanh toán thành công
 					ViewBag.Message = "Giao dịch thành công!";
-
-					// Gọi API (ServerSide) để cập nhật trạng thái đơn hàng
-					// (Bạn có thể đổi "Processing", "Paid" thành trạng thái bạn muốn)
 					await UpdateOrderStatusApi(orderId, "Đã xác nhận", "Đã thanh toán");
 				}
 				else
 				{
-					// Thanh toán thất bại
 					ViewBag.Message = $"Giao dịch thất bại. Mã lỗi: {vnp_ResponseCode}";
 					await UpdateOrderStatusApi(orderId, "Chờ xác nhận", "Chưa thanh toán");
 				}
@@ -101,22 +94,18 @@ namespace ClientSide.Controllers
 				ViewBag.Message = "Lỗi: Chữ ký không hợp lệ.";
 			}
 
-			// Trả về View thông báo kết quả
 			return View();
 		}
 
-		// Hàm hỗ trợ gọi API ServerSide
 		private async Task UpdateOrderStatusApi(int orderId, string orderStatus, string paymentStatus)
 		{
 			var client = _httpClientFactory.CreateClient();
 			var token = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken");
 			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-			// Khớp với DTO ở Bước 3
 			var updateDto = new { OrderStatus = orderStatus, PaymentStatus = paymentStatus };
 			var jsonContent = new StringContent(JsonSerializer.Serialize(updateDto), Encoding.UTF8, "application/json");
 
-			// URL này phải khớp với API ở Bước 3
 			await client.PutAsync($"{_urlBase}/api/Orders/{orderId}/UpdatePaymentStatus", jsonContent);
 		}
 	}

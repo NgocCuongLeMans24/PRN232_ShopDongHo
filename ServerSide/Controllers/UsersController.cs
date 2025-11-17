@@ -56,7 +56,6 @@ namespace ServerSide.Controllers
 				return NotFound();
 			}
 
-			// 4. Cập nhật các trường từ DTO
 			user.Email = userDto.Email;
 			user.FullName = userDto.FullName;
 			user.PhoneNumber = userDto.PhoneNumber;
@@ -65,10 +64,8 @@ namespace ServerSide.Controllers
 			user.IsActive = userDto.IsActive;
 			user.UpdatedAt = DateTime.UtcNow;
 
-			// 5. Xử lý mật khẩu (CHỈ CẬP NHẬT NẾU CÓ NHẬP)
 			if (!string.IsNullOrEmpty(userDto.Password))
 			{
-				// Gán thẳng mật khẩu plain-text (theo logic của bạn)
 				user.PasswordHash = userDto.Password;
 			}
 
@@ -98,7 +95,6 @@ namespace ServerSide.Controllers
 		public async Task<ActionResult<User>> PostUser(UserCreateDto userDto)
 		{
 
-			// 4. Chuyển đổi DTO sang Model "User"
 			var user = new User
 			{
 				Username = userDto.Username,

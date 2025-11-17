@@ -26,7 +26,6 @@ namespace ClientSide.Controllers
                 client.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                // Lấy thông tin user hiện tại
                 HttpResponseMessage resUser = await client.GetAsync(urlBase + "/api/Auth/current-user");
                 if (!resUser.IsSuccessStatusCode)
                 {
@@ -137,12 +136,10 @@ namespace ClientSide.Controllers
 
                 if (res.IsSuccessStatusCode)
                 {
-                    // Redirect to Index or Details after successful creation
                     return RedirectToAction("Index", new { customerId = order.CustomerId });
                 }
                 else
                 {
-                    // Optionally read the error message from response
                     string error = await res.Content.ReadAsStringAsync();
                     ModelState.AddModelError(string.Empty, "Error creating order: " + error);
                     return View(order);
@@ -153,7 +150,6 @@ namespace ClientSide.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateFromProduct(int ProductId, int Quantity = 1)
         {
-            // Lấy token từ session
             string token = HttpContext.Session.GetString("JwtToken");
             if (string.IsNullOrEmpty(token))
             {
@@ -165,11 +161,9 @@ namespace ClientSide.Controllers
             {
                 client.BaseAddress = new Uri(urlBase);
 
-                // Gửi token qua header Authorization
                 client.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                // Lấy thông tin sản phẩm
                 HttpResponseMessage resProduct = await client.GetAsync($"/api/Products/{ProductId}");
                 if (!resProduct.IsSuccessStatusCode)
                 {
@@ -189,7 +183,6 @@ namespace ClientSide.Controllers
                     return RedirectToAction("Index", "Products");
                 }
 
-                // Lấy thông tin user hiện tại
                 HttpResponseMessage resUser = await client.GetAsync("/api/Auth/current-user");
                 if (!resUser.IsSuccessStatusCode)
                 {
@@ -210,7 +203,6 @@ namespace ClientSide.Controllers
                     return RedirectToAction("Index", "Products");
                 }
 
-                // Tạo order
                 var orderRequest = new
                 {
                     OrderCode = "ORD" + DateTime.Now.Ticks,

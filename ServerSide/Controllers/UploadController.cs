@@ -8,7 +8,7 @@ namespace ServerSide.Controllers;
 public class UploadController : ControllerBase
 {
     private readonly IWebHostEnvironment _environment;
-    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private const long MaxFileSize = 5 * 1024 * 1024;
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
 
     public UploadController(IWebHostEnvironment environment)
@@ -46,23 +46,19 @@ public class UploadController : ControllerBase
 
             var uploadsFolder = Path.Combine(webRootPath, "images", "products");
             
-            // Tạo thư mục nếu chưa tồn tại
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            // Tạo tên file unique
             var fileName = $"{Guid.NewGuid()}{extension}";
             var filePath = Path.Combine(uploadsFolder, fileName);
 
-            // Lưu file
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
-            // Trả về full URL để client có thể truy cập
             var relativeUrl = $"/images/products/{fileName}";
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var imageUrl = $"{baseUrl}{relativeUrl}";

@@ -18,7 +18,6 @@ public class SupplierController : Controller
         PropertyNameCaseInsensitive = true
     };
 
-    // Kiểm tra user có phải Supplier không
     private UserDto? GetCurrentUser()
     {
         try
@@ -54,7 +53,6 @@ public class SupplierController : Controller
         return $"{_urlBase}/{imagePath.TrimStart('/')}";
     }
 
-    // GET: Supplier/Products - Danh sách sản phẩm của Supplier
     public async Task<IActionResult> Products()
     {
         var currentUser = GetCurrentUser();
@@ -92,7 +90,6 @@ public class SupplierController : Controller
         return View(products);
     }
 
-    // GET: Supplier/Products/Details/5
     public async Task<IActionResult> Details(int id)
     {
         var currentUser = GetCurrentUser();
@@ -128,7 +125,6 @@ public class SupplierController : Controller
         return View(product);
     }
 
-    // GET: Supplier/Products/Create
     [HttpGet]
     public async Task<IActionResult> Create()
     {
@@ -143,7 +139,6 @@ public class SupplierController : Controller
         return View(new ProductCreateViewModel());
     }
 
-    // POST: Supplier/Products/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ProductCreateViewModel model)
@@ -169,7 +164,6 @@ public class SupplierController : Controller
             return RedirectToAction("Login", "Account");
         }
 
-        // Upload ảnh nếu có
         string? imageUrl = null;
         if (model.ImageFile != null && model.ImageFile.Length > 0)
         {
@@ -200,7 +194,6 @@ public class SupplierController : Controller
             }
         }
 
-        // Tạo sản phẩm
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -234,7 +227,6 @@ public class SupplierController : Controller
         return View(model);
     }
 
-    // GET: Supplier/Products/Edit/5
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -288,7 +280,6 @@ public class SupplierController : Controller
         return View(viewModel);
     }
 
-    // POST: Supplier/Products/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, ProductCreateViewModel model)
@@ -313,8 +304,7 @@ public class SupplierController : Controller
             return RedirectToAction("Login", "Account");
         }
 
-        // Upload ảnh mới nếu có
-        string? imageUrl = model.Image; // Giữ ảnh cũ nếu không upload mới
+        string? imageUrl = model.Image;
         if (model.ImageFile != null && model.ImageFile.Length > 0)
         {
             using var uploadClient = new HttpClient { BaseAddress = new Uri(_urlBase) };
@@ -336,7 +326,6 @@ public class SupplierController : Controller
             }
         }
 
-        // Cập nhật sản phẩm
         using var client = new HttpClient { BaseAddress = new Uri(_urlBase) };
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -370,7 +359,6 @@ public class SupplierController : Controller
         return View(model);
     }
 
-    // POST: Supplier/Products/Delete/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)

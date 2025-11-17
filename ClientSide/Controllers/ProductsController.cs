@@ -29,7 +29,6 @@ public class ProductsController : Controller
         return $"{_urlBase}/{imagePath.TrimStart('/')}";
     }
 
-    // GET: Products - Danh sách sản phẩm (cho Customer xem)
     public async Task<IActionResult> Index()
     {
         using var client = new HttpClient();
@@ -51,7 +50,6 @@ public class ProductsController : Controller
         return View(products);
     }
 
-    // GET: Products/ProductDetail/5 - Chi tiết sản phẩm (cho Customer xem)
     public async Task<IActionResult> ProductDetail(int id)
     {
         using var client = new HttpClient();

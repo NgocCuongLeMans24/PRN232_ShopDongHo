@@ -61,16 +61,13 @@ namespace ServerSide.Controllers
 				};
 			}
 
-			// 4. Lấy tổng số lượng
 			var totalCount = await query.CountAsync();
 
-			// 5. Phân trang
 			var users = await query
 				.Skip((pageNumber - 1) * pageSize)
 				.Take(pageSize)
 				.ToListAsync();
 
-			// 6. Chuyển đổi sang DTO
 			var userDtos = users.Select(u => new
 			{
 				u.UserId,
@@ -84,7 +81,6 @@ namespace ServerSide.Controllers
 				u.CreatedAt
 			}).ToList();
 
-			// 7. Trả về đối tượng JSON phức tạp
 			return Ok(new
 			{
 				Users = userDtos,
@@ -210,7 +206,6 @@ namespace ServerSide.Controllers
 				CategoryName = p.Category.CategoryName
 			}).ToList();
 
-			// 7. Trả về
 			return Ok(new
 			{
 				Products = productDtos,

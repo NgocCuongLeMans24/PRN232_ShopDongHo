@@ -66,11 +66,9 @@
                 btnVnPay.onclick = function(e) {
                     e.preventDefault();
 
-                    // Lấy dữ liệu từ Model
                     var orderId = @Model.OrderId;
                     var totalAmount = @Model.TotalAmount;
 
-                    // Gọi action "Checkout" trong "PaymentController"
                     fetch('/Payment/Checkout', {
                         method: 'POST',
                         headers: {
@@ -80,7 +78,6 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        // Nhận URL từ JSON và điều hướng
                         if (data.paymentUrl) {
                             window.location.href = data.paymentUrl;
                         } else {

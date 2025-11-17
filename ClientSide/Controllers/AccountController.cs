@@ -46,7 +46,6 @@ namespace ClientSide.Controllers
 
             if (response.IsSuccessStatusCode)
             {
-                // Đọc message từ API
                 var json = JsonDocument.Parse(responseBody);
                 var message = json.RootElement.GetProperty("message").GetString();
 

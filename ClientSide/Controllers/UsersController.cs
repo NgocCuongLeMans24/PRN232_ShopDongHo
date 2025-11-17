@@ -1,7 +1,7 @@
-﻿using ClientSide.DataDtos; // Đảm bảo using DTOs của bạn
+﻿using ClientSide.DataDtos;
 using ClientSide.Utils;
 using ClientSide.ViewModels;
-using Microsoft.AspNetCore.Http; // Để dùng Session
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -35,7 +35,6 @@ namespace ClientSide.Controllers
 			string sortBy = "FullName",
 			string sortOrder = "asc")
 		{
-			// 1. Kiểm tra bảo vệ
 			var token = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken");
 			if (string.IsNullOrEmpty(token))
 			{
@@ -46,7 +45,6 @@ namespace ClientSide.Controllers
 			client.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", token);
 
-			// 2. Build URL với các tham số query
 			var builder = new UriBuilder($"{_urlBase}/api/Admin/GetUsersPaged");
 			var query = HttpUtility.ParseQueryString(string.Empty);
 			query["pageNumber"] = pageNumber.ToString();
@@ -61,23 +59,19 @@ namespace ClientSide.Controllers
 			UserListViewModel viewModel = new UserListViewModel();
 			try
 			{
-				// 3. Gọi API đã nâng cấp
 				var response = await client.GetAsync(url);
 				response.EnsureSuccessStatusCode();
 
 				var json = await response.Content.ReadAsStringAsync();
 				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-				// 4. API trả về chính xác cấu trúc của ViewModel
 				viewModel = JsonSerializer.Deserialize<UserListViewModel>(json, options);
 			}
 			catch (HttpRequestException ex)
 			{
 				ViewBag.Error = $"Lỗi khi gọi API: {ex.Message}";
-				// ... (Xử lý lỗi 401/403)
 			}
 
-			// 5. Gửi ViewModel hoàn chỉnh sang cho View
 			return View(viewModel);
 		}
 
@@ -91,7 +85,6 @@ namespace ClientSide.Controllers
 			string sortBy = "FullName",
 			string sortOrder = "asc")
 		{
-			// 1. Kiểm tra bảo vệ
 			var token = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken");
 			if (string.IsNullOrEmpty(token))
 			{
@@ -102,7 +95,6 @@ namespace ClientSide.Controllers
 			client.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", token);
 
-			// 2. Build URL với các tham số query
 			var builder = new UriBuilder($"{_urlBase}/api/Admin/GetUsersPaged");
 			var query = HttpUtility.ParseQueryString(string.Empty);
 			query["pageNumber"] = pageNumber.ToString();
@@ -117,23 +109,19 @@ namespace ClientSide.Controllers
 			UserListViewModel viewModel = new UserListViewModel();
 			try
 			{
-				// 3. Gọi API đã nâng cấp
 				var response = await client.GetAsync(url);
 				response.EnsureSuccessStatusCode();
 
 				var json = await response.Content.ReadAsStringAsync();
 				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-				// 4. API trả về chính xác cấu trúc của ViewModel
 				viewModel = JsonSerializer.Deserialize<UserListViewModel>(json, options);
 			}
 			catch (HttpRequestException ex)
 			{
 				ViewBag.Error = $"Lỗi khi gọi API: {ex.Message}";
-				// ... (Xử lý lỗi 401/403)
 			}
 
-			// 5. Gửi ViewModel hoàn chỉnh sang cho View
 			return View(viewModel);
 		}
 
@@ -148,7 +136,6 @@ namespace ClientSide.Controllers
 			return View(viewModel);
 		}
 
-		// [POST] /Users/Create
 		[HttpPost]
 		public async Task<IActionResult> Create(CreateUserViewModel viewModel)
 		{
@@ -232,8 +219,6 @@ namespace ClientSide.Controllers
 			return View(viewModel);
 		}
 
-		// --- ACTION ĐỂ XỬ LÝ LƯU THAY ĐỔI ---
-		// [POST] /Users/Edit/5
 		[HttpPost]
 		public async Task<IActionResult> Edit(EditUserViewModel viewModel)
 		{

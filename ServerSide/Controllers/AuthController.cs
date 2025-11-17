@@ -57,7 +57,6 @@ public class AuthController : ControllerBase
             }
         }
 
-        // Nếu chưa tồn tại thì tạo mới
         var token = Guid.NewGuid().ToString();
         var newUser = new User
         {
@@ -83,7 +82,6 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản." });
     }
 
-    // 🔹 Xác minh email
     [HttpGet("verify")]
     public async Task<IActionResult> VerifyEmail([FromQuery] string token)
     {
@@ -161,7 +159,6 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Email không tồn tại trong hệ thống." });
         }
 
-        // Tạo token reset
         user.VerificationToken = Guid.NewGuid().ToString();
         user.VerificationTokenExpire = DateTime.UtcNow.AddHours(1);
         await _context.SaveChangesAsync();
@@ -186,7 +183,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Mã đặt lại không hợp lệ hoặc đã hết hạn." });
         }
 
-        user.PasswordHash = model.NewPassword; // 👉 bạn có thể mã hóa nếu có hash
+        user.PasswordHash = model.NewPassword;
         user.VerificationToken = null;
         user.VerificationTokenExpire = null;
         await _context.SaveChangesAsync();
