@@ -44,14 +44,30 @@ namespace ServerSide.Controllers
         // PUT: api/OrderDetails/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutOrderDetail(int id, OrderDetail orderDetail)
+        public async Task<IActionResult> PutOrderDetail(int id, [FromBody] OrderDetail orderDetail)
         {
-            if (id != orderDetail.OrderDetailId)
+            if (orderDetail == null)
             {
-                return BadRequest();
+                return BadRequest("OrderDetail data is required");
             }
 
-            _context.Entry(orderDetail).State = EntityState.Modified;
+            if (id != orderDetail.OrderDetailId)
+            {
+                return BadRequest($"ID mismatch: route id={id}, body id={orderDetail.OrderDetailId}");
+            }
+
+            // Load existing entity from database
+            var existingDetail = await _context.OrderDetails.FindAsync(id);
+            if (existingDetail == null)
+            {
+                return NotFound($"OrderDetail with id {id} not found");
+            }
+
+            // Update only the fields that should be updated
+            existingDetail.Quantity = orderDetail.Quantity;
+            existingDetail.TotalPrice = orderDetail.TotalPrice;
+            existingDetail.Price = orderDetail.Price;
+            existingDetail.ProductName = orderDetail.ProductName;
 
             try
             {
@@ -67,6 +83,10 @@ namespace ServerSide.Controllers
                 {
                     throw;
                 }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error updating OrderDetail: {ex.Message}");
             }
 
             return NoContent();

@@ -1,110 +1,77 @@
-﻿@model ClientSide.ViewModels.CheckoutViewModel
-
-@{
+﻿@{
     ViewData["Title"] = "Thanh toán Đơn hàng";
+    var order = ViewBag.Order as ClientSide.Models.Order;
+    var orderId = ViewBag.OrderId as int? ?? 0;
+    var totalAmount = ViewBag.TotalAmount as decimal? ?? 0;
 }
 
 <div class="container" style="padding: 50px;">
     <h2>Xác nhận Thanh toán</h2>
     <hr />
 
-    <div class="row">
-        <div class="col-md-7">
-            <h4>Thông tin đơn hàng</h4>
-            <p><strong>Khách hàng:</strong> @Model.CustomerName</p>
-            <p><strong>Địa chỉ giao hàng:</strong> @Model.ShippingAddress</p>
-            <p><strong>Số điện thoại:</strong> @Model.PhoneNumber</p>
+    @if (order != null)
+    {
+        <div class="row">
+            <div class="col-md-7">
+                <h4>Thông tin đơn hàng</h4>
+                <p><strong>Mã đơn:</strong> @order.OrderCode</p>
+                <p><strong>Ngày tạo:</strong> @order.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</p>
+                <p><strong>Trạng thái:</strong> @order.OrderStatus</p>
 
-            <h5>Chi tiết sản phẩm</h5>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>Số lượng</th>
-                        <th>Giá</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.CartItems)
-                    {
+                <h5 class="mt-4">Chi tiết sản phẩm</h5>
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>@item.ProductName</td>
-                            <td>@item.Quantity</td>
-                            <td>@((item.Price * item.Quantity).ToString("N0")) VND</td>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @if (order.OrderDetails != null)
+                        {
+                            @foreach (var detail in order.OrderDetails)
+                            {
+                                <tr>
+                                    <td>@detail.ProductName</td>
+                                    <td>@detail.Quantity</td>
+                                    <td>@string.Format("{0:N0} VNĐ", detail.Price)</td>
+                                    <td>@string.Format("{0:N0} VNĐ", detail.TotalPrice)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="col-md-5">
-            <div class="card p-3">
+            <div class="col-md-5">
+                <div class="card p-3">
+                    <h4>Tổng cộng</h4>
+                    <h2 class="text-danger">@string.Format("{0:N0} VNĐ", totalAmount)</h2>
+                    <hr />
+                    <p>Chọn phương thức thanh toán:</p>
 
-                <h4>Tổng cộng</h4>
-                <h2 class="text-danger">@Model.TotalAmount.ToString("N0") VND</h2>
-                <hr />
-                <p>Chọn phương thức thanh toán:</p>
+                    <form asp-action="ProcessPayment" asp-controller="Payment" method="post">
+                        <input type="hidden" name="orderId" value="@orderId" />
+                        <input type="hidden" name="totalAmount" value="@totalAmount" />
 
-                <form asp-action="Checkout" asp-controller="Payment" method="post">
+                        <button type="submit" class="btn btn-primary w-100">
+                            Thanh toán VNPay
+                        </button>
+                    </form>
 
-                    <input type="hidden" name="orderId" value="@Model.OrderId" />
-                    <input type="hidden" name="totalAmount" value="@Model.TotalAmount" />
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        Thanh toán VNPay
-                    </button>
-                </form>
-
+                    <a asp-action="Index" asp-controller="Orders" class="btn btn-secondary w-100 mt-2">
+                        Quay lại
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            Không tìm thấy thông tin đơn hàng!
+        </div>
+    }
 </div>
-
-
-@section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-
-            // Lấy nút bấm bằng ID
-            var btnVnPay = document.getElementById("btnVnPay");
-
-            if (btnVnPay) {
-                btnVnPay.onclick = function(e) {
-                    e.preventDefault(); // Ngăn submit (nếu lỡ đặt trong form)
-
-                    // Lấy dữ liệu từ Model (được render ra từ C#)
-                    var orderId = @Model.OrderId;
-                    var totalAmount = @Model.TotalAmount;
-
-                    // 3. Dùng JS (Fetch) gọi về PaymentController (ClientSide)
-                    fetch('/Payment/Checkout', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        // Gửi dữ liệu đi
-                        body: 'orderId=' + orderId + '&totalAmount=' + totalAmount
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                             throw new Error('Network response was not ok ' + response.statusText);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // 4. Nhận URL từ JSON (Bước 1) và điều hướng trình duyệt
-                        if (data.paymentUrl) {
-                            window.location.href = data.paymentUrl;
-                        } else {
-                            alert("Lỗi: Không thể tạo URL thanh toán.");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Lỗi khi gọi Checkout:", error);
-                        alert("Đã xảy ra lỗi. Vui lòng thử lại.");
-                    });
-                };
-            }
-        });
-    </script>
-}

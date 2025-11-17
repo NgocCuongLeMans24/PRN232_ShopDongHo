@@ -437,7 +437,8 @@ namespace ClientSide.Controllers
                     if (!updateRes.IsSuccessStatusCode)
                     {
                         hasError = true;
-                        errorMessage = "Có lỗi xảy ra khi cập nhật số lượng!";
+                        var errorText = await updateRes.Content.ReadAsStringAsync();
+                        errorMessage = $"Có lỗi xảy ra khi cập nhật số lượng! Chi tiết: {errorText}";
                         break;
                     }
                 }

@@ -68,13 +68,12 @@ else
                         <td>
                             @if (canPay)
                             {
-                                <form asp-action="Checkout" asp-controller="Payment" method="post" style="display: inline;">
-                                    <input type="hidden" name="orderId" value="@order.OrderId" />
-                                    <input type="hidden" name="totalAmount" value="@orderTotal" />
-                                    <button type="submit" class="btn btn-sm btn-success">
-                                        Thanh toán VNPay
-                                    </button>
-                                </form>
+                                <a asp-action="Checkout" asp-controller="Payment" 
+                                   asp-route-orderId="@order.OrderId" 
+                                   asp-route-totalAmount="@orderTotal"
+                                   class="btn btn-sm btn-success">
+                                    Thanh toán VNPay
+                                </a>
                             }
                             else
                             {

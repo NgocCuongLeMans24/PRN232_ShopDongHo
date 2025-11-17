@@ -28,12 +28,51 @@ namespace ClientSide.Controllers
 			_httpContextAccessor = httpContextAccessor;
 		}
 
-		// --- HÀM TẠO URL THANH TOÁN ---
-		// (Bạn sẽ gọi hàm này từ trang Checkout, giả sử bạn đã có orderId và totalAmount)
-		[HttpPost]
-		public IActionResult Checkout(int orderId, decimal totalAmount)
+		// GET: Hiển thị trang thanh toán
+		[HttpGet]
+		public async Task<IActionResult> Checkout(int orderId, decimal totalAmount)
 		{
+			var token = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken");
+			if (string.IsNullOrEmpty(token))
+			{
+				TempData["Error"] = "Bạn cần đăng nhập để thanh toán!";
+				return RedirectToAction("Login", "Account");
+			}
 
+			var client = _httpClientFactory.CreateClient();
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+			// Lấy thông tin đơn hàng
+			var orderRes = await client.GetAsync($"{_urlBase}/api/Orders/{orderId}");
+			if (!orderRes.IsSuccessStatusCode)
+			{
+				TempData["Error"] = "Không tìm thấy đơn hàng!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			var orderJson = await orderRes.Content.ReadAsStringAsync();
+			var order = JsonSerializer.Deserialize<ClientSide.Models.Order>(orderJson, new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true
+			});
+
+			if (order == null)
+			{
+				TempData["Error"] = "Không tìm thấy đơn hàng!";
+				return RedirectToAction("Index", "Orders");
+			}
+
+			ViewBag.OrderId = orderId;
+			ViewBag.TotalAmount = totalAmount;
+			ViewBag.Order = order;
+
+			return View();
+		}
+
+		// POST: Xử lý thanh toán VNPay
+		[HttpPost]
+		public IActionResult ProcessPayment(int orderId, decimal totalAmount)
+		{
 			string vnp_ReturnUrl = _config.GetValue<string>("VnPay:PaymentBackReturnUrl");
 			string vnp_Url = _config.GetValue<string>("VnPay:BaseUrl");
 			string vnp_TmnCode = _config.GetValue<string>("VnPay:TmnCode");
@@ -47,7 +86,7 @@ namespace ClientSide.Controllers
 			pay.AddRequestData("vnp_Amount", ((long)totalAmount * 100).ToString());
 			pay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
 			pay.AddRequestData("vnp_CurrCode", "VND");
-			pay.AddRequestData("vnp_IpAddr", HttpContext.Connection.RemoteIpAddress.ToString());
+			pay.AddRequestData("vnp_IpAddr", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1");
 			pay.AddRequestData("vnp_Locale", "vn");
 			pay.AddRequestData("vnp_OrderInfo", $"Thanh toan don hang {orderId}");
 			pay.AddRequestData("vnp_OrderType", "other");
@@ -236,7 +275,7 @@ namespace ClientSide.Controllers
 				return RedirectToAction("Index", "Orders");
 			}
 
-			// Chuyển đến thanh toán đơn hàng tổng hợp
+			// Chuyển đến trang thanh toán đơn hàng tổng hợp
 			return RedirectToAction("Checkout", new { orderId = createdOrder.OrderId, totalAmount = totalAmount });
 		}
 

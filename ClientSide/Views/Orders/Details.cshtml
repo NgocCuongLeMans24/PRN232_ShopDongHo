@@ -160,13 +160,12 @@
     @if (Model.PaymentStatus != "Đã thanh toán")
     {
         <div class="mt-3">
-            <form asp-action="Checkout" asp-controller="Payment" method="post">
-                <input type="hidden" name="orderId" value="@Model.OrderId" />
-                <input type="hidden" name="totalAmount" value="@(Model.OrderDetails?.Sum(d => d.TotalPrice) ?? 0)" />
-                <button type="submit" class="btn btn-success btn-lg">
-                    Thanh toán VNPay
-                </button>
-            </form>
+            <a asp-action="Checkout" asp-controller="Payment" 
+               asp-route-orderId="@Model.OrderId" 
+               asp-route-totalAmount="@(Model.OrderDetails?.Sum(d => d.TotalPrice) ?? 0)"
+               class="btn btn-success btn-lg">
+                Thanh toán VNPay
+            </a>
         </div>
     }
 </div>
