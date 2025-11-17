@@ -122,17 +122,13 @@ namespace ServerSide.Controllers
             }
 
             // Check if user has purchased this product (via OrderDetails)
-            // Accept multiple order statuses
+            // Only allow review if payment status is "Đã thanh toán"
             var hasPurchased = await _context.OrderDetails
                 .Include(od => od.Order)
                 .AnyAsync(od => od.ProductId == dto.ProductId 
                     && od.Order != null 
                     && od.Order.CustomerId == user.UserId
-                    && od.Order.OrderStatus != null
-                    && (od.Order.OrderStatus.Contains("Xác Nhận") || 
-                        od.Order.OrderStatus.Contains("xác nhận") ||
-                        od.Order.OrderStatus == "Đã Xác Nhận" ||
-                        od.Order.OrderStatus == "Chờ xác nhận"));
+                    && od.Order.PaymentStatus == "Đã thanh toán");
 
             if (!hasPurchased)
             {
@@ -166,9 +162,7 @@ namespace ServerSide.Controllers
                     .FirstOrDefaultAsync(od => od.ProductId == dto.ProductId 
                         && od.Order != null 
                         && od.Order.CustomerId == user.UserId
-                        && od.Order.OrderStatus != null
-                        && (od.Order.OrderStatus.Contains("Xác Nhận") || 
-                            od.Order.OrderStatus.Contains("xác nhận")));
+                        && od.Order.PaymentStatus == "Đã thanh toán");
                 
                 if (orderDetail != null && orderDetail.Order != null)
                 {

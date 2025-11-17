@@ -41,8 +41,9 @@ else
             @foreach (var item in Model)
             {
                 var reviewStatus = reviewStatuses.ContainsKey(item.ProductId) ? reviewStatuses[item.ProductId] : null;
-                var canReview = !string.IsNullOrEmpty(item.OrderStatus) && 
-                               (item.OrderStatus.Contains("Xác Nhận") || item.OrderStatus.Contains("xác nhận"));
+                // Chỉ cho phép đánh giá khi đã thanh toán
+                var canReview = !string.IsNullOrEmpty(item.PaymentStatus) && 
+                               item.PaymentStatus == "Đã thanh toán";
                 
                 <tr>
                     <td>@item.OrderCode</td>

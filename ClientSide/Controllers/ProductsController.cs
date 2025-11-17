@@ -138,30 +138,11 @@ public class ProductsController : Controller
 
                         if (matchingItems.Any())
                         {
-                            // More flexible status checking - case insensitive
-                            // Accept any order status that contains "Xác Nhận" or "xác nhận"
+                            // Chỉ cho phép đánh giá khi đã thanh toán
                             var hasPurchased = matchingItems
-                                .Any(h =>
-                                {
-                                    if (string.IsNullOrEmpty(h.OrderStatus))
-                                        return false;
-
-                                    var status = h.OrderStatus.Trim();
-                                    return status.Contains("Xác Nhận", StringComparison.OrdinalIgnoreCase) ||
-                                           status.Contains("xác nhận", StringComparison.OrdinalIgnoreCase) ||
-                                           status.Equals("Đã Xác Nhận", StringComparison.OrdinalIgnoreCase) ||
-                                           status.Equals("Chờ xác nhận", StringComparison.OrdinalIgnoreCase) ||
-                                           status.Equals("Đã xác nhận", StringComparison.OrdinalIgnoreCase);
-                                });
-
-                            // If no confirmed order found, check if user has ANY order for this product
-                            // This is a fallback - if user came from History page, they should be able to review
-                            if (!hasPurchased && matchingItems.Any())
-                            {
-                                // Allow review if user has any order for this product (more lenient)
-                                hasPurchased = true;
-                            }
-
+                                .Any(h => !string.IsNullOrEmpty(h.PaymentStatus) && 
+                                         h.PaymentStatus == "Đã thanh toán");
+                            
                             ViewBag.CanReview = hasPurchased;
 
                             // Debug logging
