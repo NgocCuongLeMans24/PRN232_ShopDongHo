@@ -42,4 +42,6 @@ public partial class Product
     public virtual User Supplier { get; set; } = null!;
 
     public virtual ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
+
+    public virtual ICollection<Cart> Carts { get; set; } = new List<Cart>();
 }

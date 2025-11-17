@@ -16,41 +16,57 @@
             <p><strong>Số điện thoại:</strong> @Model.PhoneNumber</p>
 
             <h5>Chi tiết sản phẩm</h5>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>Số lượng</th>
-                        <th>Giá</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.CartItems)
-                    {
+            <form id="checkoutForm" asp-action="CreateOrderFromCart" asp-controller="Cart" method="post">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>@item.ProductName</td>
-                            <td>@item.Quantity</td>
-                            <td>@((item.Price * item.Quantity).ToString("N0")) VND</td>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.CartItems.Count; i++)
+                        {
+                            var item = Model.CartItems[i];
+                            <tr>
+                                <td>@item.ProductName</td>
+                                <td>
+                                    <input type="number" 
+                                           name="quantities[@item.ProductId]" 
+                                           value="@item.Quantity" 
+                                           min="1" 
+                                           class="form-control quantity-input" 
+                                           data-price="@item.Price"
+                                           data-product-id="@item.ProductId"
+                                           style="width: 80px;" />
+                                </td>
+                                <td>@item.Price.ToString("N0") VND</td>
+                                <td class="item-total" data-product-id="@item.ProductId">
+                                    @((item.Price * item.Quantity).ToString("N0")) VND
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </form>
         </div>
 
         <div class="col-md-5">
             <div class="card p-3">
                 <h4>Tổng cộng</h4>
-                <h2 class="text-danger">@Model.TotalAmount.ToString("N0") VND</h2>
+                <h2 class="text-danger" id="totalAmount">@Model.TotalAmount.ToString("N0") VND</h2>
                 <hr />
                 <p>Chọn phương thức thanh toán:</p>
 
-                <button id="btnVnPay" class="btn btn-primary w-100">
+                <button type="submit" form="checkoutForm" id="btnVnPay" class="btn btn-primary w-100">
                     Thanh toán VNPay
                 </button>
 
-                <a asp-action="PlaceOrderCOD" asp-controller="Cart" class="btn btn-secondary w-100 mt-2">
+                <button type="submit" form="checkoutForm" formaction="@Url.Action("CreateOrderCOD", "Cart")" class="btn btn-secondary w-100 mt-2">
                     Thanh toán khi nhận hàng (COD)
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -59,39 +75,50 @@
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Cập nhật tổng tiền khi thay đổi số lượng
+            var quantityInputs = document.querySelectorAll('.quantity-input');
+            var totalAmountElement = document.getElementById('totalAmount');
+            var initialTotal = @Model.TotalAmount;
 
+            quantityInputs.forEach(function(input) {
+                input.addEventListener('change', function() {
+                    updateTotal();
+                });
+
+                input.addEventListener('input', function() {
+                    updateTotal();
+                });
+            });
+
+            function updateTotal() {
+                var total = 0;
+                quantityInputs.forEach(function(input) {
+                    var quantity = parseInt(input.value) || 0;
+                    var price = parseFloat(input.getAttribute('data-price')) || 0;
+                    var productId = input.getAttribute('data-product-id');
+                    var itemTotal = quantity * price;
+                    total += itemTotal;
+
+                    // Cập nhật thành tiền cho từng sản phẩm
+                    var itemTotalElement = document.querySelector('.item-total[data-product-id="' + productId + '"]');
+                    if (itemTotalElement) {
+                        itemTotalElement.textContent = itemTotal.toLocaleString('vi-VN') + ' VND';
+                    }
+                });
+
+                // Cập nhật tổng cộng
+                if (totalAmountElement) {
+                    totalAmountElement.textContent = total.toLocaleString('vi-VN') + ' VND';
+                }
+            }
+
+            // Xử lý submit form cho VNPay
             var btnVnPay = document.getElementById("btnVnPay");
-
             if (btnVnPay) {
-                btnVnPay.onclick = function(e) {
-                    e.preventDefault();
-
-                    // Lấy dữ liệu từ Model
-                    var orderId = @Model.OrderId;
-                    var totalAmount = @Model.TotalAmount;
-
-                    // Gọi action "Checkout" trong "PaymentController"
-                    fetch('/Payment/Checkout', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: 'orderId=' + orderId + '&totalAmount=' + totalAmount
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Nhận URL từ JSON và điều hướng
-                        if (data.paymentUrl) {
-                            window.location.href = data.paymentUrl;
-                        } else {
-                            alert("Lỗi: Không thể tạo URL thanh toán.");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Lỗi khi gọi /Payment/Checkout:", error);
-                        alert("Đã xảy ra lỗi. Vui lòng thử lại.");
-                    });
-                };
+                btnVnPay.addEventListener('click', function(e) {
+                    // Form sẽ submit đến CreateOrderFromCart, sau đó redirect đến Payment/Checkout
+                    // Không cần preventDefault vì chúng ta muốn form submit bình thường
+                });
             }
         });
     </script>
